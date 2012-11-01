@@ -20,9 +20,9 @@
 # The repository .gitattributes must also enable the hooks on the targeted
 # files.
 
-do_KWStyle=$(git config --bool hooks.KWStyle) || do_KWStyle=false
+do_KWStyle=false
 
-do_uncrustify=$(git config --bool hooks.uncrustify) || do_uncrustify=false
+do_uncrustify=$(git config --bool hooks.uncrustify)
 
 #-----------------------------------------------------------------------------
 # Check if we want to run the style on a given file.  Uses git attributes.  If
