@@ -17,6 +17,8 @@
 
 # Modifications by Lars Bilke, Helmholtz Centre for Environmental Research
 
+. "${BASH_SOURCE%/*}/hooks-config.bash"
+
 die() {
 	echo 'pre-commit hook failure' 1>&2
 	echo '-----------------------' 1>&2
