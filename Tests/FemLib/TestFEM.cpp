@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <Eigen>
 
 #include "MeshLib/Elements/Quad.h"
 #include "FemLib/FiniteElement/C0IsoparametricElements.h"
@@ -47,7 +48,24 @@ void setExpectedLaplaceMatrix(double k, T_MATRIX &_m)
 
 TEST(FemLib, ElementIsoQuad4)
 {
-    // prepare a quad element
+    // Local dense matrix type (row-majored), vector type
+#define USE_FIXED_EIGEN
+#ifdef USE_FIXED_EIGEN
+    const static unsigned dim = 2;
+    const static unsigned e_nnodes = 4;
+    typedef Eigen::Matrix<double, e_nnodes, e_nnodes, Eigen::RowMajor> NodalMatrix;
+    typedef Eigen::Matrix<double, dim, e_nnodes, Eigen::RowMajor> DimNodalMatrix;
+    typedef Eigen::Matrix<double, dim, dim, Eigen::RowMajor> DimMatrix;
+    typedef Eigen::Matrix<double, e_nnodes, 1> NodalVector;
+#else
+    typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> NodalMatrix;
+    typedef NodalMatrix DimNodalMatrix;
+    typedef NodalMatrix DimMatrix;
+    typedef Eigen::VectorXd NodalVector;
+#endif
+    typedef Eigen::VectorXd LocalVector;
+
+    // prepare a quad mesh element
     MeshLib::Node node1(0.0, 0.0, 0.0, 1);
     MeshLib::Node node2(1.0, 0.0, 0.0, 2);
     MeshLib::Node node3(1.0, 1.0, 0.0, 3);
@@ -60,21 +78,27 @@ TEST(FemLib, ElementIsoQuad4)
     MeshLib::Quad e(nodes);
 
     // create a finite element object
-    FemLib::QUAD4 fe(e, 2);
+    typedef FemLib::QUAD4<NodalVector, DimNodalMatrix, DimMatrix> QUAD4Type;
+    typedef typename QUAD4Type::ShapeDataType ShapeData;
+    QUAD4Type fe(e, 2);
 
     // evaluate a local matrix K = int{ dN^T D dN }
-    auto q = fe.getIntegrationMethod();
-    MathLib::LocalMatrix K = MathLib::LocalMatrix::Zero(e.getNNodes(), e.getNNodes());
+    NodalMatrix K(e.getNNodes(), e.getNNodes());
     const double conductivity = 1e-11;
-    MathLib::LocalMatrix D = conductivity * MathLib::LocalMatrix::Identity(e.getDimension(), e.getDimension());
+#ifdef USE_FIXED_EIGEN
+    DimMatrix D = conductivity * DimMatrix::Identity();
+#else
+    DimMatrix D = conductivity * DimMatrix::Identity(e.getDimension(), e.getDimension());
+#endif
     double x[3] = {};
-    FemLib::ShapeData shape(e.getDimension(), e.getNNodes());
+    ShapeData shape(e.getDimension(), e.getNNodes());
+    auto q = fe.getIntegrationMethod();
     for (size_t i=0; i<q.getNPoints(); i++) {
         q.getPoint(i, x);
         fe.computeShapeFunctions(x, shape);
         K.noalias() += shape.dNdx.transpose() * D * shape.dNdx * shape.detJ * q.getWeight(i);
     }
-    MathLib::LocalMatrix expectedK(e.getNNodes(), e.getNNodes());
+    NodalMatrix expectedK(e.getNNodes(), e.getNNodes());
     setExpectedLaplaceMatrix(conductivity, expectedK);
     ASSERT_DOUBLE_ARRAY_EQ(expectedK.data(), K.data(), K.rows()*K.cols(), 1e-12);
 
@@ -89,7 +113,7 @@ TEST(FemLib, ElementIsoQuad4)
     ASSERT_DOUBLE_ARRAY_EQ(expectedK.data(), K.data(), K.rows()*K.cols(), 1e-12);
 
     // interpolate
-    MathLib::LocalVector vec_nodal_values1(e.getNNodes());
+    NodalVector vec_nodal_values1(e.getNNodes());
     vec_nodal_values1 << 0, 1, 1, 0;
     double x_node0[2] = {1,1};
     fe.computeShapeFunctions(x_node0, shape);
@@ -103,13 +127,13 @@ TEST(FemLib, ElementIsoQuad4)
 
     // extrapolate
     q.setSamplingLevel(2);
-    MathLib::LocalVector vec_gp_values(q.getNPoints());
+    LocalVector vec_gp_values(q.getNPoints());
     for (std::size_t i=0; i<q.getNPoints(); i++) {
         q.getPoint(i, x);
         fe.computeShapeFunctions(x, shape);
         vec_gp_values(i) = fe.interpolate(shape, vec_nodal_values1);
     }
-    MathLib::LocalVector vec_nodal_values2;
+    NodalVector vec_nodal_values2;
     fe.extrapolate(vec_gp_values, vec_nodal_values2);
     ASSERT_DOUBLE_ARRAY_EQ(vec_nodal_values1, vec_nodal_values2, vec_nodal_values1.size(), 1e-12);
 }
