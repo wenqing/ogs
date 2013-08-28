@@ -26,7 +26,8 @@
 namespace FemLib
 {
 
-typedef TemplateIsoparametric<MeshLib::Quad, ShapeQuad4, IntegrationGaussRegular<2>, ExtrapolationGaussQuad> QUAD4;
+template <class T_SHAPE_VECTOR, class T_DSHAPE_MATRIX, class T_JACOBIAN_MATRIX>
+using QUAD4 = TemplateIsoparametric<MeshLib::Quad, ShapeQuad4, IntegrationGaussRegular<2>, ExtrapolationGaussQuad, T_SHAPE_VECTOR, T_DSHAPE_MATRIX, T_JACOBIAN_MATRIX>;
 
 }
 
