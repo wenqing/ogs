@@ -14,8 +14,8 @@
 
 #include "ExtrapolationGaussQuad.h"
 
-#include <cassert>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 
 #include "MathLib/Integration/GaussLegendre.h"
@@ -60,35 +60,6 @@ double ExtrapolationGaussQuad::calculateXi_p(std::size_t nGaussLevel)
     for (std::size_t gp=0; gp<nGaussLevel; gp++)
         Xi_p = std::max(Xi_p, std::abs(MathLib::GaussLegendre::getPoint(nGaussLevel, gp)));
     return 1.0 / Xi_p; // 1 means nodes
-}
-
-void ExtrapolationGaussQuad::extrapolate(const MathLib::LocalVector &gp_values, MathLib::LocalVector &nodal_values)
-{
-    static const std::size_t nExtrapolatedNodes = 4; // only corner nodes
-    const std::size_t nGaussPoints = gp_values.size();
-    assert(nGaussPoints >= nExtrapolatedNodes);
-    const std::size_t nGaussLevel = std::sqrt(nGaussPoints);
-
-    // reorder gauss point values
-    MathLib::LocalVector reordered_gp_values(nExtrapolatedNodes);
-    for (int i=0; i<gp_values.size(); i++) {
-        std::size_t nod_id = getNodeIndexOfGaussQuad(nGaussLevel, i);
-        if (nod_id < nExtrapolatedNodes)
-            reordered_gp_values[nod_id] = gp_values[i];
-    }
-
-    // calculate Xi_p
-    const double Xi_p = calculateXi_p(nGaussLevel);
-
-    // extrapolate linearly
-    nodal_values.resize(nExtrapolatedNodes);
-    double x[3] = {};
-    MathLib::LocalVector N(nExtrapolatedNodes);
-    for (std::size_t i=0; i<nExtrapolatedNodes; i++) {
-        getExtrapolatedPoints(i, Xi_p, x);
-        ShapeQuad4::computeShapeFunction(x, N);
-        nodal_values[i] = N.dot(reordered_gp_values);
-    }
 }
 
 void ExtrapolationGaussQuad::getExtrapolatedPoints(std::size_t nodeIdOfGaussQuad, double Xi_p, double* r)

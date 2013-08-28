@@ -16,7 +16,7 @@
 #ifndef EXTRAPOLATIONGAUSSQUAD_H_
 #define EXTRAPOLATIONGAUSSQUAD_H_
 
-#include "MathLib/DataType.h"
+#include <cstddef>
 
 namespace FemLib
 {
@@ -33,7 +33,8 @@ public:
      * @param gp_values     a vector of gauss point values
      * @param nodal_values  a vector of extrapolated nodal values
      */
-    static void extrapolate(const MathLib::LocalVector &gp_values, MathLib::LocalVector &nodal_values);
+    template <class T_GP_VEC, class T_NOD_VEC>
+    static void extrapolate(const T_GP_VEC &gp_values, T_NOD_VEC &nodal_values);
 
 private:
     static std::size_t getNodeIndexOfGaussQuad(std::size_t nGaussLevel, std::size_t igp);
@@ -43,5 +44,7 @@ private:
 };
 
 } // end namespace
+
+#include "ExtrapolationGaussQuad.tpp"
 
 #endif //EXTRAPOLATIONGAUSSQUAD_H_
