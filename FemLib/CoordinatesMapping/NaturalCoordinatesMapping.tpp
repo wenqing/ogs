@@ -20,29 +20,22 @@
 
 namespace FemLib
 {
-template <class T_SHAPE_FUNC>
-NaturalCoordinatesMapping<T_SHAPE_FUNC>::NaturalCoordinatesMapping(const MeshLib::Element &ele)
+
+template <class T_MESH_ELEMENT, class T_SHAPE_FUNC, class T_SHAPE_DATA>
+NaturalCoordinatesMapping<T_MESH_ELEMENT,T_SHAPE_FUNC,T_SHAPE_DATA>::NaturalCoordinatesMapping(const MeshElementType &ele)
 : _ele(&ele)
 {
     this->reset(ele);
 };
 
-template <class T_SHAPE_FUNC>
-void NaturalCoordinatesMapping<T_SHAPE_FUNC>::reset(const MeshLib::Element &ele)
+template <class T_MESH_ELEMENT, class T_SHAPE_FUNC, class T_SHAPE_DATA>
+void NaturalCoordinatesMapping<T_MESH_ELEMENT,T_SHAPE_FUNC,T_SHAPE_DATA>::reset(const MeshElementType &ele)
 {
     _ele = &ele;
-
-    const std::size_t dim = _ele->getDimension();
-    const std::size_t nnodes = _ele->getNNodes();
-    _nodes_coords.resize(dim, nnodes);
-    for (std::size_t i=0; i<nnodes; i++)
-        for (std::size_t j=0; j<dim; j++)
-            _nodes_coords(j,i) = ele.getNode(i)->getCoords()[j];
 };
 
-/// computeMappingProperty mapping properties at the given location in natural coordinates
-template <class T_SHAPE_FUNC>
-void NaturalCoordinatesMapping<T_SHAPE_FUNC>::computeMappingMatrices(const double* natural_pt, ShapeData &prop) const
+template <class T_MESH_ELEMENT, class T_SHAPE_FUNC, class T_SHAPE_DATA>
+void NaturalCoordinatesMapping<T_MESH_ELEMENT,T_SHAPE_FUNC,T_SHAPE_DATA>::computeMappingMatrices(const double* natural_pt, ShapeDataType &prop) const
 {
     //prepare
     const std::size_t dim = _ele->getDimension();
@@ -58,7 +51,7 @@ void NaturalCoordinatesMapping<T_SHAPE_FUNC>::computeMappingMatrices(const doubl
     for (std::size_t i_r=0; i_r<dim; i_r++) {
         for (std::size_t j_x=0; j_x<dim; j_x++) {
             for (std::size_t k=0; k<nnodes; k++) {
-                prop.J(i_r,j_x) += prop.dNdr(i_r, k) * _nodes_coords(j_x, k);
+                prop.J(i_r,j_x) += prop.dNdr(i_r, k) * _ele->getNode(k)->getCoords()[j_x];
             }
         }
     }
@@ -73,8 +66,8 @@ void NaturalCoordinatesMapping<T_SHAPE_FUNC>::computeMappingMatrices(const doubl
     }
 };
 
-template <class T_SHAPE_FUNC>
-void NaturalCoordinatesMapping<T_SHAPE_FUNC>::mapToPhysicalCoordinates(const ShapeData &prop, double* physical_pt) const
+template <class T_MESH_ELEMENT, class T_SHAPE_FUNC, class T_SHAPE_DATA>
+void NaturalCoordinatesMapping<T_MESH_ELEMENT,T_SHAPE_FUNC,T_SHAPE_DATA>::mapToPhysicalCoordinates(const ShapeDataType &prop, double* physical_pt) const
 {
     const std::size_t dim = _ele->getDimension();
     const std::size_t nnodes = _ele->getNNodes();
@@ -82,12 +75,12 @@ void NaturalCoordinatesMapping<T_SHAPE_FUNC>::mapToPhysicalCoordinates(const Sha
     for (std::size_t i=0; i<dim; i++) {
         physical_pt[i] = .0;
         for (std::size_t j=0; j<nnodes; j++)
-            physical_pt[i] += prop.N(j) * _nodes_coords(i,j);
+            physical_pt[i] += prop.N(j) * _ele->getNode(j)->getCoords()[i];
     }
 }
 
-template <class T_SHAPE_FUNC>
-void NaturalCoordinatesMapping<T_SHAPE_FUNC>::mapToNaturalCoordinates(const ShapeData &prop, const double* physical_pt, double* natural_pt) const
+template <class T_MESH_ELEMENT, class T_SHAPE_FUNC, class T_SHAPE_DATA>
+void NaturalCoordinatesMapping<T_MESH_ELEMENT,T_SHAPE_FUNC,T_SHAPE_DATA>::mapToNaturalCoordinates(const ShapeDataType &prop, const double* physical_pt, double* natural_pt) const
 {
     const std::size_t dim = _ele->getDimension();
     const std::size_t nnodes = _ele->getNNodes();
@@ -97,7 +90,7 @@ void NaturalCoordinatesMapping<T_SHAPE_FUNC>::mapToNaturalCoordinates(const Shap
     // x_avg = sum_i {x_i} / n
     for (std::size_t i=0; i<dim; i++)
         for (std::size_t j=0; j<nnodes; j++)
-            dx[i] += _nodes_coords(i,j);
+            dx[i] += _ele->getNode(j)->getCoords()[i];
     for (std::size_t i=0; i<dim; i++)
         dx[i] /= (double)nnodes;
     // dx = pt - x_avg

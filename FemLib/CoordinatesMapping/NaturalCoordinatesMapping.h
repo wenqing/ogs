@@ -17,8 +17,6 @@
 #define NATURALCOORDINATESMAPPING_H_
 
 
-#include "MeshLib/Elements/Element.h"
-
 #include "ShapeData.h"
 
 
@@ -34,24 +32,27 @@ namespace FemLib
  *   i.e. (x,y) for triangles
  * - _nodes_coords(r,s,t) = N(r,s,t) x_i
  */
-template <class T_SHAPE_FUNC>
+template <class T_MESH_ELEMENT, class T_SHAPE_FUNC, class T_SHAPE_DATA>
 class NaturalCoordinatesMapping
 {
 public:
+    typedef T_MESH_ELEMENT MeshElementType;
+    typedef T_SHAPE_DATA ShapeDataType;
+
     NaturalCoordinatesMapping() : _ele(nullptr) {}
 
-    explicit NaturalCoordinatesMapping(const MeshLib::Element &ele);
+    explicit NaturalCoordinatesMapping(const MeshElementType &ele);
 
     ~NaturalCoordinatesMapping() {}
 
     /// reset a mesh element
-    void reset(const MeshLib::Element &ele);
+    void reset(const MeshElementType &ele);
 
     /// compute mapping matrices at the given location in natural coordinates
     ///
     /// @param natural_pt
     /// @param shape
-    void computeMappingMatrices(const double* natural_pt, ShapeData &shape) const;
+    void computeMappingMatrices(const double* natural_pt, ShapeDataType &shape) const;
 
     /// compute physical coordinates at the given natural coordinates
     /// \f[
@@ -60,7 +61,7 @@ public:
     ///
     /// @param shape
     /// @param physical_pt
-    void mapToPhysicalCoordinates(const ShapeData &shape, double* physical_pt) const;
+    void mapToPhysicalCoordinates(const ShapeDataType &shape, double* physical_pt) const;
 
     /// compute natural coordinates at the given physical coordinates.
     /// Assuming \f$ r=0 \f$ at \f$ _nodes_coords = \bar{_nodes_coords}_{avg} \f$, natural coordinates can be calculated as
@@ -71,11 +72,10 @@ public:
     /// @param shape
     /// @param physical_pt
     /// @param natural_pt
-    void mapToNaturalCoordinates(const ShapeData &shape, const double* physical_pt, double* natural_pt) const;
+    void mapToNaturalCoordinates(const ShapeDataType &shape, const double* physical_pt, double* natural_pt) const;
 
 private:
-    const MeshLib::Element* _ele;
-    MathLib::LocalMatrix _nodes_coords;
+    const MeshElementType* _ele;
 };
 
 } //end namespace
