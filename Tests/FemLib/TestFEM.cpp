@@ -78,7 +78,11 @@ TEST(FemLib, ElementIsoQuad4)
     MeshLib::Quad e(nodes);
 
     // create a finite element object
+#ifdef CXX_TEMPLATE_ALIASES_SUPPORTED
     typedef FemLib::QUAD4<NodalVector, DimNodalMatrix, DimMatrix> QUAD4Type;
+#else
+    typedef FemLib::QUAD4<NodalVector, DimNodalMatrix, DimMatrix>::type QUAD4Type;
+#endif
     typedef typename QUAD4Type::ShapeDataType ShapeData;
     QUAD4Type fe(e, 2);
 
