@@ -86,12 +86,6 @@ ELSEIF(COMPILER_IS_GCC)
 	SET(BOOST_TOOLSET gcc)
 ENDIF()
 
-# Set update command
-IF(WIN32)
-	SET(BOOST_UPDATE_COMMAND bootstrap.bat)
-ELSE()
-	SET(BOOST_UPDATE_COMMAND ./bootstrap.sh)
-ENDIF()
 
 # Set additional config options
 SET(BOOST_CONFIG_OPTIONS "")
@@ -99,6 +93,14 @@ IF(WIN32)
 	IF(HAVE_64_BIT)
 		SET(BOOST_CONFIG_OPTIONS "architecture=x86;address-model=64")
 	ENDIF()
+ENDIF()
+
+if(EXTERNAL_BOOST_DOWNLOAD)
+# Set update command
+IF(WIN32)
+	SET(BOOST_UPDATE_COMMAND bootstrap.bat)
+ELSE()
+	SET(BOOST_UPDATE_COMMAND ./bootstrap.sh)
 ENDIF()
 
 # Set archive sources
@@ -131,3 +133,4 @@ IF(NOT Boost_INCLUDE_DIRS)
 ENDIF()
 
 LINK_DIRECTORIES( ${source_dir}/stage/lib/ )
+endif(EXTERNAL_BOOST_DOWNLOAD)
