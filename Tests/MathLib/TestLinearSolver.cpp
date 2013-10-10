@@ -152,6 +152,9 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
     idx_c = new int[ex1.dim_eqs];
     idx_r = new int[msize];
 
+    ////std::cout<<"Here 1"<<std::endl;
+
+
     
     for(int j=0;j<ex1.dim_eqs; j++)
     {
@@ -166,17 +169,26 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
            local_matrix[i*ex1.dim_eqs +j] =  ex1.mat(idx_r[i], j);
        }
     } 
+
+    //// std::cout<<"Here 2"<<std::endl;
+
     //-------------------------------------------------------------------
     //
     // Solver configuration   
     l_eqs.Config(ls_option);
     l_eqs.initializeMatVec();
+
+    ////std::cout<<"Here 3"<<std::endl;
+
+
     // local assembly
     l_eqs.addMatrixEntries(msize, idx_r, ex1.dim_eqs, idx_c, local_matrix);
+    ////std::cout<<"Here 4 "<<msize<<" " <<ex1.dim_eqs<<   std::endl;
     // No need to change RHS for this example.    
     l_eqs.finalAssembleEQS_MPI();
-
-
+    ////std::cout<<"Here 5"<<std::endl;
+ 
+  
     //-------------------------------------------------------------------
     // Apply Dirichlet BC test
     int *bc_eqs_id = nullptr;
@@ -189,8 +201,10 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
       if(bc_id > msize*mrank && bc_id < msize*(mrank+1))
         bc_size_rank++;  
     }
-    if(bc_size_rank)
+    if(bc_size_rank == 0)
       goto APPLY_BC; // Skip the following
+
+
 
     bc_eqs_id = new int[bc_size_rank];
     bc_eqs_value = new double[bc_size_rank];
@@ -198,10 +212,20 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
     for(size_t i=0; i<ex1.vec_dirichlet_bc_id.size(); i++)
     {
        const int bc_id =  ex1.vec_dirichlet_bc_id[i]; 
-       if(bc_id > msize*mrank && bc_id < msize*(mrank+1))
+
+
+       ////   std::cout<<"Here 7,  bc_id "<<  bc_id << " Value: "<< ex1.vec_dirichlet_bc_value[i]   << std::endl;
+       ////   std::cout<<"Here 8, msize*mrank "<< msize*mrank << " msize*(mrank+1): "<<  msize*(mrank+1)   << std::endl;
+
+
+
+       if(bc_id >= msize*mrank && bc_id < msize*(mrank+1))
        {
 	  bc_eqs_id[bc_size_rank] = bc_id;  
           bc_eqs_value[bc_size_rank] =  ex1.vec_dirichlet_bc_value[i];
+
+	  ////  std::cout<<"Here 9,  bc_size_rank "<<  bc_size_rank<< " Value: "<<  bc_eqs_value[bc_size_rank]   << std::endl;
+
           bc_size_rank++;
 
        }  
@@ -214,6 +238,7 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
     l_eqs.applyKnownSolutions(bc_size_rank, bc_eqs_id,  bc_eqs_value);
 
 
+
     // Solve the linear equation
     l_eqs.Solver();
     l_eqs.mappingSolution();
@@ -222,12 +247,9 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
 
     // Convergence test
     ASSERT_ARRAY_NEAR(ex1.exH, x, ex1.dim_eqs, 1e-5);
-
+  
 
     // Test
-    delete [] local_matrix;
-    delete [] idx_c;
-    delete [] idx_r;
     if(bc_eqs_id != nullptr)
       {
         delete [] bc_eqs_id;
@@ -236,7 +258,10 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
       {
         delete [] bc_eqs_value;
       } 
-
+  
+    delete [] local_matrix;
+    delete [] idx_c;
+    delete [] idx_r;
 
 }
 
