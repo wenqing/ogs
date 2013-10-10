@@ -130,7 +130,7 @@ void checkLinearSolverInterface(T_MATRIX  &A,  boost::property_tree::ptree &ls_o
 }
 
   //template argument T_VECTOR will be removed if it is not used anymore
-  template <class T_LINEAR_EQUATION, typename T_VECTOR >
+ template <class T_LINEAR_EQUATION, typename T_VECTOR >
 void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree::ptree &ls_option)
 {
 
@@ -152,9 +152,6 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
     idx_c = new int[ex1.dim_eqs];
     idx_r = new int[msize];
 
-    ////std::cout<<"Here 1"<<std::endl;
-
-
     
     for(int j=0;j<ex1.dim_eqs; j++)
     {
@@ -170,7 +167,6 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
        }
     } 
 
-    //// std::cout<<"Here 2"<<std::endl;
 
     //-------------------------------------------------------------------
     //
@@ -178,15 +174,12 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
     l_eqs.Config(ls_option);
     l_eqs.initializeMatVec();
 
-    ////std::cout<<"Here 3"<<std::endl;
 
 
     // local assembly
     l_eqs.addMatrixEntries(msize, idx_r, ex1.dim_eqs, idx_c, local_matrix);
-    ////std::cout<<"Here 4 "<<msize<<" " <<ex1.dim_eqs<<   std::endl;
     // No need to change RHS for this example.    
     l_eqs.finalAssembleEQS_MPI();
-    ////std::cout<<"Here 5"<<std::endl;
  
   
     //-------------------------------------------------------------------
@@ -214,17 +207,11 @@ void checkLinearSolverInterface(T_LINEAR_EQUATION &l_eqs,  boost::property_tree:
        const int bc_id =  ex1.vec_dirichlet_bc_id[i]; 
 
 
-       ////   std::cout<<"Here 7,  bc_id "<<  bc_id << " Value: "<< ex1.vec_dirichlet_bc_value[i]   << std::endl;
-       ////   std::cout<<"Here 8, msize*mrank "<< msize*mrank << " msize*(mrank+1): "<<  msize*(mrank+1)   << std::endl;
-
-
 
        if(bc_id >= msize*mrank && bc_id < msize*(mrank+1))
        {
 	  bc_eqs_id[bc_size_rank] = bc_id;  
           bc_eqs_value[bc_size_rank] =  ex1.vec_dirichlet_bc_value[i];
-
-	  ////  std::cout<<"Here 9,  bc_size_rank "<<  bc_size_rank<< " Value: "<<  bc_eqs_value[bc_size_rank]   << std::endl;
 
           bc_size_rank++;
 
