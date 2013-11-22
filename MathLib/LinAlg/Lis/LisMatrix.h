@@ -113,6 +113,7 @@ public:
     LisOption::MatrixType getMatrixType() const { return _mat_type; };
 
 
+
 private:
     std::size_t const _n_rows;
     LisOption::MatrixType const _mat_type;
