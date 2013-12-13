@@ -205,12 +205,11 @@ void PETScVector::setZero( )
 
 double  PETScVector::get(const  PetscInt idx) const
 {
-   double x[1];
-   PetscInt idxs[1];
-   idxs[0] = idx;
+   double x;
+   PetscInt idxs = idx;
 
-   VecGetValues(_v, 1, idxs, x);
-   return x[0];
+   VecGetValues(_v, 1, &idxs, &x);
+   return x;
 }
 
 // Overloaded operator: initialize  the vector with a constant value
