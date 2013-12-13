@@ -78,46 +78,47 @@ void PETScVector::getGlobalEntries(PetscScalar u0[], PetscScalar u1[])
    PetscMemoryGetCurrentUsage(&mem1);
 #endif
 
-   PetscScalar *xp;
-
-   int receivecount;
-   PetscInt low,high,otherlow;
-   MPI_Status status;
-   PetscInt count;
-   int tag = 89999; // sending, receiving tag
-
-   const int _size_rank = BaseLib::InforMPI::getSize();
-   const int _rank = BaseLib::InforMPI::getRank();
-
+   PetscInt low, high;
    VecGetOwnershipRange(_v, &low, &high);
+
+   PetscInt count;
    VecGetLocalSize(_v, &count);
 
+   PetscScalar *xp;
    VecGetArray(_v, &xp);
    std::copy(xp, xp+count, u1);
    // Alternative for debugging:
    //for(int i=0; i<count; i++)
    //   u1[i] = xp[i];
 
-   PetscScalar *global_buff = new PetscScalar[_size];
 
    // Collect solution from processes.
+   PetscScalar *global_buff = new PetscScalar[_size];
    std::copy(u1, u1+count, global_buff+low);
    // Alternative for debugging:
    //for(int j=0; j<count; j++)
    //   global_buff[low+j] = u1[j];
 
-   for(int i=0; i<_size_rank; i++)
    {
-      if(i != _rank)
+      int receivecount;
+      int tag = 89999; // sending, receiving tag
+      PetscInt otherlow;
+      MPI_Status status;
+      const int _size_rank = BaseLib::InforMPI::getSize();
+      const int _rank = BaseLib::InforMPI::getRank();
+
+      for(int i=0; i<_size_rank; i++)
       {
-         MPI_Sendrecv( &count, 1, MPI_INT, i,tag,
-                       &receivecount,1,MPI_INT,i,tag, PETSC_COMM_WORLD ,&status);
-         MPI_Sendrecv( &low, 1, MPI_INT, i,tag,
-                       &otherlow,1,MPI_INT,i,tag,PETSC_COMM_WORLD,&status );
-         MPI_Sendrecv( u1, count, MPI_DOUBLE, i,tag,
-                       u0,receivecount,MPI_DOUBLE,i,tag, PETSC_COMM_WORLD,&status  );
-         for(int j=0; j<receivecount; j++)
-            global_buff[otherlow+j] = u0[j];
+         if (i == _rank)
+            continue;
+
+         MPI_Sendrecv(&count, 1, MPI_INT, i, tag, &receivecount, 1, MPI_INT,
+                      i, tag, PETSC_COMM_WORLD, &status);
+         MPI_Sendrecv(&low, 1, MPI_INT, i, tag, &otherlow, 1, MPI_INT,
+                      i, tag, PETSC_COMM_WORLD, &status);
+         MPI_Sendrecv(u1, count, MPI_DOUBLE, i, tag, u0, receivecount, MPI_DOUBLE,
+                      i, tag, PETSC_COMM_WORLD, &status);
+         std::copy_n(u0, receivecount, global_buff+otherlow);
       }
    }
 
@@ -204,12 +205,11 @@ void PETScVector::setZero( )
 
 double  PETScVector::get(const  PetscInt idx) const
 {
-   double x[1];
-   PetscInt idxs[1];
-   idxs[0] = idx;
+   double x;
+   PetscInt idxs = idx;
 
-   VecGetValues(_v, 1, idxs, x);
-   return x[0];
+   VecGetValues(_v, 1, &idxs, &x);
+   return x;
 }
 
 // Overloaded operator: initialize  the vector with a constant value
