@@ -15,32 +15,56 @@
 #define PETSCLINEARSOLVEROPTION_H_
 
 #include <string>
+#include <boost/property_tree/ptree.hpp>
 
 #include <petscksp.h>
 
 namespace MathLib
 {
+
+/*!
+    PETSc ILU options
+
+ */
+struct PETScPC_ILU_Option
+{
+    PETScPC_ILU_Option(const boost::property_tree::ptree &option);
+
+    /// Number of levels of fill for ILU(k)
+    int levels;
+
+    /// Reuse ordering of factorized matrix from previous factorization
+    bool reuse_ordering;
+
+    /// Use the fill ratio computed in the initial factorization.
+    bool reuse_fill;
+
+    /*! for ILU(0) with natural ordering, reuses the space of the matrix
+        for its factorization (overwrites original matrix)
+    */
+    bool use_in_place;
+
+    /// fill in a zero diagonal even if levels of fill indicate it wouldn't be fill
+    bool allow_diagonal_fill;
+};
+
 /*!
    \brief This a struct data containing configuration data
           used to configure a procondtioner and a linear solver of PETSc.
 */
 struct PETScLinearSolverOption
 {
-    PETScLinearSolverOption() :  max_it(2000), rtol(1.e-5),
-        atol(PETSC_DEFAULT), dtol(PETSC_DEFAULT),
-        solver_name("bcgs"), solver_name("bjacobi"),
-        damping_factor_richards(1.0),
-        emin_chebyshev(0.01), emax_chebyshev(100.0),
-        restart_number_gmres(30), is_gram_schmidt_orthog_gmres(true),
-        refine_type_gmres(KSP_GMRES_CGS_REFINE_NEVER),
-        righ_side_preco(false)
+    /// Default constructor
+    PETScLinearSolverOption()
+        : solver_name("bcgs"), pc_name("bjacobi"), preco_side(PC_LEFT),
+          max_it(2000), rtol(1.e-5), atol(PETSC_DEFAULT), dtol(PETSC_DEFAULT),
+          damping_factor_richards(1.0), emin_chebyshev(0.01), emax_chebyshev(100.0),
+          restart_number_gmres(30), is_modified_gram_schmidt_gmres(false),
+          refine_type_gmres(KSP_GMRES_CGS_REFINE_NEVER)
     { }
 
-    PetscInt max_it; ///< Maximum iteration
-
-    PetscReal rtol;  ///< Tolerance for the relative error, \f$e=|r|/|b|\f$.
-    PetscReal atol;  ///< Tolerance for the absolute error, \f$e=|r|\f$.
-    PetscReal dtol;  ///< Relative increase in the residual.
+    /// Constructor with an argument of options
+    PETScLinearSolverOption(const boost::property_tree::ptree &option);
 
     /*!
         The name of solver, and it could be one of the following names
@@ -124,21 +148,30 @@ struct PETScLinearSolverOption
             ainvcusp
             gamg
       */
-    std::string _pc_name;
+    std::string pc_name;
+
+    /// Flag for which side preconditioning.
+    PCSide preco_side;
+
+    PetscInt max_it; ///< Maximum iteration
+
+    PetscReal rtol;  ///< Tolerance for the relative error, \f$e=|r|/|b|\f$.
+    PetscReal atol;  ///< Tolerance for the absolute error, \f$e=|r|\f$.
+    PetscReal dtol;  ///< Relative increase in the residual.
 
     /// Damping factor for Richards.
-    double damping_factor_richards;
+    PetscReal damping_factor_richards;
 
     /// Smallest eignvalue for Chebyshev.
-    double emin_chebyshev;
+    PetscReal emin_chebyshev;
     /// maximum eignvalue for Chebyshev.
-    double emax_chebyshev;
+    PetscReal emax_chebyshev;
 
     ///  Restart number of GMRES.
-    double restart_number_gmres;
+    PetscInt restart_number_gmres;
 
-    /// Flag for Gram-Schmidt orthogonalization.
-    bool is_gram_schmidt_orthogo_gmres
+    /// Flag for the modified Gram-Schmidt orthogonalization.
+    bool is_modified_gram_schmidt_gmres;
 
     /*!
          \brief Refinement type for GMRES.
@@ -150,8 +183,9 @@ struct PETScLinearSolverOption
     */
     KSPGMRESCGSRefinementType refine_type_gmres;
 
-    /// Flag for right side preconditioning.
-    bool righ_side_preco.
+    /// ilu or icc options
+    //PETScPC_ILU_Option pc_ilu;
+
 };
 
 } // end namespace

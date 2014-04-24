@@ -19,8 +19,8 @@
 
 #include <vector>
 
-#include "PETscMatrix.h"
-#include "PETscVector.h"
+#include "PETScMatrix.h"
+#include "PETScVector.h"
 
 namespace MathLib
 {

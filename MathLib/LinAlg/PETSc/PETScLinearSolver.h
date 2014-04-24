@@ -34,16 +34,16 @@ class PETScLinearSolver
 
         /*!
             Constructor.
-            \param A   Matrix.
+            \param A   Matrix, cannot be constant.
             \param opt Configuration options for this solver.
         */
         /// Constructor
-        PETScLinearSolver(const PETScMatrix &A,
-                          const PETScLinearSolverOption opt = PETScLinearSolverOption() );
+        PETScLinearSolver(PETScMatrix &A, const PETScLinearSolverOption opt = PETScLinearSolverOption() );
 
         ~PETScLinearSolver()
         {
-            KSPDestroy(&lsolver);
+            PCDestroy(_pc);
+            KSPDestroy(_solver);
         }
 
         /*!
@@ -60,8 +60,8 @@ class PETScLinearSolver
         void solve(const PETScVector &b, PETScVector &x);
 
     private:
-        KSP _solver; ///< Slover type.
-        PC _pc;      ///< Preconditioner type.
+        KSP *_solver; ///< Slover type.
+        PC *_pc;      ///< Preconditioner type.
 };
 
 } // end namespace

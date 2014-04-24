@@ -20,16 +20,14 @@ namespace MathLib
 {
 
 void applyKnownSolution(PETScMatrix &A, PETScVector &b, PETScVector &x,
-                        const std::vector<PetscInt> &_vec_knownX_id,
-                        const std::vector<PetscScalar> &vec_knownX_x);
+                        const std::vector<PetscInt>  &vec_knownX_id,
+                        const std::vector<PetscScalar> &vec_knownX_x)
 {
-    const PetscInt ni = static_cast<PetscInt> (_vec_knownX_id.size());
+    A.setRowsColumnsZero(vec_knownX_id);
+    A.finalizeAssembly();
 
-    A.setRowsColumnsZero(ni, &_vec_knownX_id[0]);
-    A.finalizeAssembly;
-
-    x.set<vector<PetscScalar>>(vec_knownX_id, vec_knownX_x);
-    b.set<vector<PetscScalar>>(vec_knownX_id, vec_knownX_x);
+    x.set(vec_knownX_id, vec_knownX_x);
+    b.set(vec_knownX_id, vec_knownX_x);
 
     x.finalizeAssembly();
     b.finalizeAssembly();
