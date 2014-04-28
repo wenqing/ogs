@@ -23,12 +23,14 @@ namespace MathLib
 {
 
 /*!
-    PETSc ILU options
+    PETSc ILU preconditioner options
 
  */
 struct PETScPC_ILU_Option
 {
-    PETScPC_ILU_Option(const boost::property_tree::ptree &option);
+    PETScPC_ILU_Option();
+
+    void setOption(const boost::property_tree::ptree &option);
 
     /// Number of levels of fill for ILU(k)
     int levels;
@@ -46,6 +48,38 @@ struct PETScPC_ILU_Option
 
     /// fill in a zero diagonal even if levels of fill indicate it wouldn't be fill
     bool allow_diagonal_fill;
+};
+
+/*!
+    PETSc SOR//SSOR preconditioner options
+
+*/
+struct PETScPC_SOR_Option
+{
+    PETScPC_SOR_Option();
+
+    void setOption(const boost::property_tree::ptree &option);
+
+    /// Relaxation number
+    PetscReal omega;
+
+    /// Number of parelllel iterations, each parallel iteration
+    /// has 'lits' local iterations
+    PetscInt its;
+
+    /// Number of local iterations
+    PetscInt lits;
+
+    /*!
+        SOR type:
+        SOR_FORWARD_SWEEP
+        SOR_BACKWARD_SWEEP
+        SOR_SYMMETRIC_SWEEP
+        SOR_LOCAL_FORWARD_SWEEP
+        SOR_LOCAL_BACKWARD_SWEEP
+        SOR_LOCAL_SYMMETRIC_SWEEP
+    */
+    MatSORType type;
 };
 
 /*!
@@ -183,8 +217,8 @@ struct PETScLinearSolverOption
     */
     KSPGMRESCGSRefinementType refine_type_gmres;
 
-    /// ilu or icc options
-    //PETScPC_ILU_Option pc_ilu;
+    /// ilu or icc preconditioner options
+    PETScPC_ILU_Option pc_ilu;
 
 };
 

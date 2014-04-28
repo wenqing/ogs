@@ -38,7 +38,7 @@ class PETScLinearSolver
             \param opt Configuration options for this solver.
         */
         /// Constructor
-        PETScLinearSolver(PETScMatrix &A, const PETScLinearSolverOption opt = PETScLinearSolverOption() );
+        PETScLinearSolver(PETScMatrix &A, const PETScLinearSolverOption &opt = PETScLinearSolverOption() );
 
         ~PETScLinearSolver()
         {
@@ -51,7 +51,7 @@ class PETScLinearSolver
             \param opt Information to configure a solver.
         */
 
-        void setOption(const PETScLinearSolverOption opt);
+        void setOption(const PETScLinearSolverOption &opt);
         /*!
             Solve a system of equations.
             \param b The right hand of the equations.
@@ -62,6 +62,10 @@ class PETScLinearSolver
     private:
         KSP *_solver; ///< Slover type.
         PC *_pc;      ///< Preconditioner type.
+
+        /// Set option for ILU/ICC preconditioner
+        void setOptionILU(const PETScLinearSolverOption &opt);
+
 };
 
 } // end namespace

@@ -19,7 +19,7 @@
 namespace MathLib
 {
 
-PETScLinearSolver::PETScLinearSolver(PETScMatrix &A, const PETScLinearSolverOption opt)
+PETScLinearSolver::PETScLinearSolver(PETScMatrix &A, const PETScLinearSolverOption &opt)
     : _solver(NULL), _pc(NULL)
 {
     KSPCreate(PETSC_COMM_WORLD, _solver);
@@ -28,9 +28,10 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A, const PETScLinearSolverOpti
     setOption(opt);
 }
 
-void PETScLinearSolver::setOption(const PETScLinearSolverOption opt)
+void PETScLinearSolver::setOption(const PETScLinearSolverOption &opt)
 {
-
+    // --------------------------------------------------------------
+    // Preconditioner:
     if(_pc)
     {
         PCDestroy(_pc);
@@ -40,6 +41,13 @@ void PETScLinearSolver::setOption(const PETScLinearSolverOption opt)
     PCSetType(*_pc, opt.pc_name.c_str());
     KSPSetPCSide(*_solver, opt.preco_side);
 
+    if(opt.pc_name.find("ilu") != std::string::npos)
+    {
+        setOptionILU(opt);
+    }
+
+    // --------------------------------------------------------------
+    // Solver:
     if(opt.solver_name.find("richardson") != std::string::npos)
     {
         KSPRichardsonSetScale(*_solver, opt.damping_factor_richards);
@@ -65,6 +73,33 @@ void PETScLinearSolver::setOption(const PETScLinearSolverOption opt)
     KSPSetTolerances(*_solver, opt.rtol, opt.atol, opt.dtol, opt.max_it);
     KSPSetFromOptions(*_solver);  // set running time option
 }
+
+/*
+void PETScLinearSolver::setOptionILU(const PETScLinearSolverOption &opt)
+{
+		PCFactorSetLevels(*_pc, opt.pc_ilu.levels);
+
+		if(opt.pc_ilu.reuse_ordering)
+        {
+		   PCFactorSetReuseOrdering(*_pc, PETSC_TRUE);
+		}
+
+		if(opt.pc_ilu.reuse_fill)
+        {
+		   PCFactorSetReuseFill(*_pc, PETSC_TRUE);
+		}
+
+		if(opt.pc_ilu.use_in_place)
+        {
+		   PCFactorSetUseInPlace(*_pc);
+		}
+
+		if(opt.pc_ilu.allow_diagonal_fill)
+        {
+		   PCFactorSetAllowDiagonalFill(*_pc);
+		}
+}
+*/
 
 void PETScLinearSolver::solve(const PETScVector &b, PETScVector &x)
 {
