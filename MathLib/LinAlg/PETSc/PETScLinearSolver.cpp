@@ -18,6 +18,8 @@
 
 namespace MathLib
 {
+// Set ILU/ICC preconditioner options
+void setPETSC_PC_OptionILU(PC pc, const PETScLinearSolverOption &opt);
 
 PETScLinearSolver::PETScLinearSolver(PETScMatrix &A, const PETScLinearSolverOption &opt)
     : _solver(NULL), _pc(NULL)
@@ -43,7 +45,7 @@ void PETScLinearSolver::setOption(const PETScLinearSolverOption &opt)
 
     if(opt.pc_name.find("ilu") != std::string::npos)
     {
-        setOptionILU(opt);
+        setPC_Option(setPETSC_PC_OptionILU, opt);
     }
 
     // --------------------------------------------------------------
@@ -74,32 +76,6 @@ void PETScLinearSolver::setOption(const PETScLinearSolverOption &opt)
     KSPSetFromOptions(*_solver);  // set running time option
 }
 
-/*
-void PETScLinearSolver::setOptionILU(const PETScLinearSolverOption &opt)
-{
-		PCFactorSetLevels(*_pc, opt.pc_ilu.levels);
-
-		if(opt.pc_ilu.reuse_ordering)
-        {
-		   PCFactorSetReuseOrdering(*_pc, PETSC_TRUE);
-		}
-
-		if(opt.pc_ilu.reuse_fill)
-        {
-		   PCFactorSetReuseFill(*_pc, PETSC_TRUE);
-		}
-
-		if(opt.pc_ilu.use_in_place)
-        {
-		   PCFactorSetUseInPlace(*_pc);
-		}
-
-		if(opt.pc_ilu.allow_diagonal_fill)
-        {
-		   PCFactorSetAllowDiagonalFill(*_pc);
-		}
-}
-*/
 
 void PETScLinearSolver::solve(const PETScVector &b, PETScVector &x)
 {
@@ -145,6 +121,31 @@ void PETScLinearSolver::solve(const PETScVector &b, PETScVector &x)
     PetscMemoryGetCurrentUsage(&mem2);
     PetscPrintf(PETSC_COMM_WORLD, "###Memory usage by solver. Before :%f After:%f Increase:%d\n", mem1, mem2, (int)(mem2 - mem1));
 #endif
+}
+
+void setPETSC_PC_OptionILU(PC pc, const PETScLinearSolverOption &opt)
+{
+    PCFactorSetLevels(pc, opt.pc_ilu.levels);
+
+    if(opt.pc_ilu.reuse_ordering)
+    {
+        PCFactorSetReuseOrdering(pc, PETSC_TRUE);
+    }
+
+    if(opt.pc_ilu.reuse_fill)
+    {
+        PCFactorSetReuseFill(pc, PETSC_TRUE);
+    }
+
+    if(opt.pc_ilu.use_in_place)
+    {
+        PCFactorSetUseInPlace(pc);
+    }
+
+    if(opt.pc_ilu.allow_diagonal_fill)
+    {
+        PCFactorSetAllowDiagonalFill(pc);
+    }
 }
 
 } //end of namespace

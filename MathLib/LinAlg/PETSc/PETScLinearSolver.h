@@ -63,10 +63,19 @@ class PETScLinearSolver
         KSP *_solver; ///< Slover type.
         PC *_pc;      ///< Preconditioner type.
 
-        /// Set option for ILU/ICC preconditioner
-        void setOptionILU(const PETScLinearSolverOption &opt);
-
+        /*!
+            Set option for preconditioner
+            \param set_pc_option Function to set PC options.
+            \param opt           Options for solvers and PCs.
+        */
+        template<typename T_FUNC> void setPC_Option(T_FUNC set_pc_option, const PETScLinearSolverOption &opt);
 };
+
+template<typename T_FUNC> void PETScLinearSolver::
+setPC_Option(T_FUNC set_pc_option, const PETScLinearSolverOption &opt)
+{
+    set_pc_option(*_pc, opt);
+}
 
 } // end namespace
 #endif
