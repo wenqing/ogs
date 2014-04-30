@@ -34,11 +34,11 @@ class PETScLinearSolver
 
         /*!
             Constructor.
-            \param A   Matrix, cannot be constant.
-            \param opt Configuration options for this solver.
+            \param A           Matrix, cannot be constant.
+            \param solver_name Solver name.
+            \param pc_name Preconditioner name.
         */
-        /// Constructor
-        PETScLinearSolver(PETScMatrix &A, const PETScLinearSolverOption &opt = PETScLinearSolverOption() );
+        PETScLinearSolver(PETScMatrix &A, const std::string solver_name, const std::string pc_name);
 
         ~PETScLinearSolver()
         {

@@ -21,13 +21,19 @@ namespace MathLib
 // Set ILU/ICC preconditioner options
 void setPETSC_PC_OptionILU(PC pc, const PETScLinearSolverOption &opt);
 
-PETScLinearSolver::PETScLinearSolver(PETScMatrix &A, const PETScLinearSolverOption &opt)
+// Set SOR/SSOR preconditioner options
+void setPETSC_PC_OptionSOR(PC pc, const PETScLinearSolverOption &opt);
+
+PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
+                                     const std::string solver_name, const std::string pc_name)
     : _solver(NULL), _pc(NULL)
 {
     KSPCreate(PETSC_COMM_WORLD, _solver);
     KSPSetOperators(*_solver, A.getRawMatrix(), A.getRawMatrix(), DIFFERENT_NONZERO_PATTERN);
 
-    setOption(opt);
+    KSPSetType(*_solver, solver_name.c_str());
+    KSPGetPC(*_solver, _pc);
+    PCSetType(*_pc, pc_name.c_str());
 }
 
 void PETScLinearSolver::setOption(const PETScLinearSolverOption &opt)
@@ -43,10 +49,17 @@ void PETScLinearSolver::setOption(const PETScLinearSolverOption &opt)
     PCSetType(*_pc, opt.pc_name.c_str());
     KSPSetPCSide(*_solver, opt.preco_side);
 
-    if(opt.pc_name.find("ilu") != std::string::npos)
+    if(   opt.pc_name.find("ilu") != std::string::npos
+            || opt.pc_name.find("icc") != std::string::npos )
     {
         setPC_Option(setPETSC_PC_OptionILU, opt);
     }
+
+    if(opt.pc_name.find("sor") != std::string::npos)
+    {
+        setPC_Option(setPETSC_PC_OptionSOR, opt);
+    }
+
 
     // --------------------------------------------------------------
     // Solver:
@@ -146,6 +159,13 @@ void setPETSC_PC_OptionILU(PC pc, const PETScLinearSolverOption &opt)
     {
         PCFactorSetAllowDiagonalFill(pc);
     }
+}
+
+void setPETSC_PC_OptionSOR(PC pc, const PETScLinearSolverOption &opt)
+{
+    PCSORSetOmega(pc, opt.pc_sor.omega);
+    PCSORSetIterations(pc, opt.pc_sor.its, opt.pc_sor.lits);
+    PCSORSetSymmetric(pc, opt.pc_sor.type);
 }
 
 } //end of namespace
