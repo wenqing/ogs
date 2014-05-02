@@ -72,7 +72,6 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
 
     //----------------------------------------------------------------------
     // Specific configuration, preconditioner
-
     // ILU or ICC
     boost::optional<ptree> pt_pc_spec = pt_pc->get_child("ilu");
     if(pt_pc_spec)
@@ -97,10 +96,16 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
         setPC_Option(pc_opt);
     }
 
+    pt_pc_spec = pt_pc->get_child("lu");
+    if(pt_pc_spec)
+    {
+        PETScPC_LU_Option pc_opt(*pt_pc_spec);
+        setPC_Option(pc_opt);
+    }
+
     //
     KSPSetFromOptions(_solver);  // set running time option
 }
-
 
 void PETScLinearSolver::solve(const PETScVector &b, PETScVector &x)
 {
