@@ -28,17 +28,12 @@ namespace MathLib
  */
 struct PETScPC_KSP_Richards_Option
 {
-    PETScPC_KSP_Richards_Option() : damping_factor_richards(1.0)
-    {
-    }
-
-    /// Set members with given values
-    void set(const boost::property_tree::ptree &option);
+    PETScPC_KSP_Richards_Option(const boost::property_tree::ptree &option);
 
     /// Set Richards option
-    void setOption(KSP *solver)
+    void setOption(KSP &solver)
     {
-        KSPRichardsonSetScale(*solver, damping_factor_richards);
+        KSPRichardsonSetScale(solver, damping_factor_richards);
     }
 
     /// Overloaded assign operator
@@ -49,7 +44,7 @@ struct PETScPC_KSP_Richards_Option
 
     /// Damping factor for Richards.
     PetscReal damping_factor_richards;
-}
+};
 
 /*!
     PETSc KSP Chebyshev options
@@ -57,17 +52,12 @@ struct PETScPC_KSP_Richards_Option
  */
 struct PETScPC_KSP_Chebyshev_Option
 {
-    PETScPC_KSP_Chebyshev_Option() : emin_chebyshev(0.01), emax_chebyshev(100.0)
-    {
-    }
-
-    /// Set members with given values
-    void set(const boost::property_tree::ptree &option);
+    PETScPC_KSP_Chebyshev_Option(const boost::property_tree::ptree &option);
 
     /// Set Chebyshev option
-    void setOption(KSP *solver)
+    void setOption(KSP &solver)
     {
-        KSPChebyshevSetEigenvalues(*solver, emax_chebyshev, emin_chebyshev);
+        KSPChebyshevSetEigenvalues(solver, emax_chebyshev, emin_chebyshev);
     }
 
     /// Overloaded assign operator
@@ -81,7 +71,7 @@ struct PETScPC_KSP_Chebyshev_Option
     PetscReal emin_chebyshev;
     /// maximum eignvalue for Chebyshev.
     PetscReal emax_chebyshev;
-}
+};
 
 /*!
     PETSc KSP GMRES options
@@ -89,17 +79,10 @@ struct PETScPC_KSP_Chebyshev_Option
  */
 struct PETScPC_KSP_GMRES_Option
 {
-    PETScPC_KSP_GMRES_Option() : restart_number_gmres(30),
-        is_modified_gram_schmidt_gmres(false),
-        refine_type_gmres(KSP_GMRES_CGS_REFINE_NEVER)
-    {
-    }
-
-    /// Set members with given values
-    void set(const boost::property_tree::ptree &option);
+    PETScPC_KSP_GMRES_Option(const boost::property_tree::ptree &option);
 
     /// Set GMRES option
-    void setOption(KSP *solver);
+    void setOption(KSP &solver);
 
     /// Overloaded assign operator
     void operator = (const PETScPC_KSP_GMRES_Option& opt)
@@ -124,7 +107,7 @@ struct PETScPC_KSP_GMRES_Option
                        KSP_GMRES_CGS_REFINE_ALWAYS} KSPGMRESCGSRefinementType;
     */
     KSPGMRESCGSRefinementType refine_type_gmres;
-}
+};
 
 /*!
     PETSc ILU preconditioner options
@@ -132,16 +115,10 @@ struct PETScPC_KSP_GMRES_Option
  */
 struct PETScPC_ILU_Option
 {
-    PETScPC_ILU_Option() : levels(PETSC_DECIDE), reuse_ordering(false),
-        reuse_fill(false), use_in_place(false), allow_diagonal_fill(false)
-    {
-    }
-
-    /// Set members with given values
-    void set(const boost::property_tree::ptree &option);
+    PETScPC_ILU_Option(const boost::property_tree::ptree &option);
 
     /// Set ILU option
-    void setOption(PC *pc);
+    void setOption(PC &pc);
 
     /// Overloaded assign operator
     void operator = (const PETScPC_ILU_Option& opt)
@@ -177,16 +154,10 @@ struct PETScPC_ILU_Option
 */
 struct PETScPC_SOR_Option
 {
-    PETScPC_SOR_Option() : omega(1.), its(PETSC_DEFAULT),
-        lits(PETSC_DEFAULT), type(SOR_FORWARD_SWEEP)
-    {
-    }
-
-    /// Set members with given values
-    void set(const boost::property_tree::ptree &option);
+    PETScPC_SOR_Option(const boost::property_tree::ptree &option);
 
     /// Set SOR/SSOR option
-    void setOption(PC *pc);
+    void setOption(PC &pc);
 
     /// Overloaded assign operator
     void operator = (const PETScPC_SOR_Option& opt)
@@ -225,20 +196,16 @@ struct PETScPC_SOR_Option
 */
 struct PETScPC_LU_Option
 {
-    PETScPC_LU_Option() : mat_type(MATORDERINGNATURAL)
-    {}
-
-    /// Set members with given values
-    void set(const boost::property_tree::ptree &option);
+    PETScPC_LU_Option(const boost::property_tree::ptree &option);
 
     /// Set LU option
-    void setOption(PC *pc)
+    void setOption(PC &pc)
     {
-        PCFactorSetMatOrderingType(*pc, mat_type);
+        PCFactorSetMatOrderingType(pc, mat_type);
     }
 
     /// Overloaded assign operator
-    void operator = (const PETScPC_SOR_Option& opt)
+    void operator = (const PETScPC_LU_Option& opt)
     {
         mat_type = opt.mat_type;
     }
@@ -248,119 +215,126 @@ struct PETScPC_LU_Option
 };
 
 /*!
-   \brief This a struct data containing configuration data
-          used to configure a procondtioner and a linear solver of PETSc.
+   \brief Class to manage the basic configuration data for
+          a Krylov subspace (KSP) interation method and a procondtioner (PC)
+          of PETSc routines.
 */
-template <typename T_KSP_OPTION, typename T_PC_OPTION> struct PETScLinearSolverOption
+class PETScLinearSolverOption
 {
-    /// Default constructor
-    PETScLinearSolverOption(const T_KSP_OPTION &ksp_opt, const T_PC_OPTION &pc_opt)
-        : solver_name("bcgs"), pc_name("bjacobi"), preco_side(PC_LEFT),
-          max_it(2000), rtol(1.e-5), atol(PETSC_DEFAULT), dtol(PETSC_DEFAULT),
-          ksp_option(ksp_opt), pc_option(pc_opt)
-    { }
+    public:
 
-    /// Constructor with an argument of options
-    PETScLinearSolverOption(const boost::property_tree::ptree &option);
+        /*!
+            Default constructor
+            \param ksp_option ptree of basic configuration data for solver
+            \param pc_option  ptree of basic configuration data for preconditioner
+        */
+        PETScLinearSolverOption(const boost::property_tree::ptree &ksp_option,
+                                const boost::property_tree::ptree &pc_option);
 
-    /*!
-        The name of solver, and it could be one of the following names
-           "richardson"
-           "chebychev"
-           "cg"
-           "cgne"
-           "nash"
-           "stcg"
-           "gltr"
-           "gmres"
-           "fgmres"
-           "lgmres"
-           "dgmres"
-           "tcqmr"
-           "bcgs"
-           "ibcgs"
-           "bcgsl"
-           "cgs"
-           "tfqmr"
-           "cr"
-           "lsqr"
-           "preonly"
-           "qcg"
-           "bicg"
-           "minres"
-           "symmlq"
-           "lcd"
-           "python"
-           "broyden"
-           "gcr"
-           "ngmres"
-           "specest"
-     */
-    std::string solver_name;
+        /// Set basic options for a KSP and a PC
+        void setOption(KSP &ksp, PC &pc)
+        {
+            KSPSetType(ksp,  _solver_name.c_str());
+            KSPGetPC(ksp, &pc);
+            PCSetType(pc, _pc_name.c_str());
+            KSPSetPCSide(ksp, _preco_side);
 
-    /*!
-         The name of preconditioner, and it could be one of the following names
-          none
-            jacobi
-            sor
-            lu
-            shell
-            bjacobi
-            mg
-            eisenstat
-            ilu
-            icc
-            asm
-            gasm
-            ksp
-            composite
-            redundant
-            spai
-            nn
-            cholesky
-            pbjacobi
-            mat
-            hypre
-            parms
-            fieldsplit
-            tfs
-            ml
-            prometheus
-            galerkin
-            exotic
-            hmpi
-            supportgraph
-            asa
-            cp
-            bfbt
-            lsc
-            python
-            pfmg
-            syspfmg
-            redistribute
-            sacusp
-            sacusppoly
-            bicgstabcusp
-            svd
-            ainvcusp
-            gamg
-      */
-    std::string pc_name;
+            KSPSetTolerances(ksp, _rtol, _atol, _dtol, _max_it);
+        }
 
-    /// Flag for which side preconditioning.
-    PCSide preco_side;
+    private:
+        /*!
+            The name of solver, and it could be one of the following names
+               "richardson"
+               "chebychev"
+               "cg"
+               "cgne"
+               "nash"
+               "stcg"
+               "gltr"
+               "gmres"
+               "fgmres"
+               "lgmres"
+               "dgmres"
+               "tcqmr"
+               "bcgs"
+               "ibcgs"
+               "bcgsl"
+               "cgs"
+               "tfqmr"
+               "cr"
+               "lsqr"
+               "preonly"
+               "qcg"
+               "bicg"
+               "minres"
+               "symmlq"
+               "lcd"
+               "python"
+               "broyden"
+               "gcr"
+               "ngmres"
+               "specest"
+        */
+        std::string _solver_name;
 
-    PetscInt max_it; ///< Maximum iteration.
+        /*!
+             The name of preconditioner, and it could be one of the following names
+                none
+                jacobi
+                sor
+                lu
+                shell
+                bjacobi
+                mg
+                eisenstat
+                ilu
+                icc
+                asm
+                gasm
+                ksp
+                composite
+                redundant
+                spai
+                nn
+                cholesky
+                pbjacobi
+                mat
+                hypre
+                parms
+                fieldsplit
+                tfs
+                ml
+                prometheus
+                galerkin
+                exotic
+                hmpi
+                supportgraph
+                asa
+                cp
+                bfbt
+                lsc
+                python
+                pfmg
+                syspfmg
+                redistribute
+                sacusp
+                sacusppoly
+                bicgstabcusp
+                svd
+                ainvcusp
+                gamg
+        */
+        std::string _pc_name;
 
-    PetscReal rtol;  ///< Tolerance for the relative error, \f$e=|r|/|b|\f$.
-    PetscReal atol;  ///< Tolerance for the absolute error, \f$e=|r|\f$.
-    PetscReal dtol;  ///< Relative increase in the residual.
+        /// Flag for which side preconditioning.
+        PCSide _preco_side;
 
-    /// Krylov subspace iteration options.
-    T_KSP_OPTION ksp_option;
+        PetscInt _max_it; ///< Maximum iteration.
 
-    /// Preconditioner options.
-    T_PC_OPTION ksp_option;
+        PetscReal _rtol;  ///< Tolerance for the relative error, \f$e=|r|/|b|\f$.
+        PetscReal _atol;  ///< Tolerance for the absolute error, \f$e=|r|\f$.
+        PetscReal _dtol;  ///< Relative increase in the residual.
 };
 
 } // end namespace

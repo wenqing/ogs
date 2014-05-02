@@ -19,6 +19,7 @@
 
 #include "PETScMatrix.h"
 #include "PETScVector.h"
+
 #include "PETScLinearSolverOption.h"
 
 namespace MathLib
@@ -38,20 +39,24 @@ class PETScLinearSolver
             \param solver_name Solver name.
             \param pc_name Preconditioner name.
         */
-        PETScLinearSolver(PETScMatrix &A, const std::string solver_name, const std::string pc_name);
+        PETScLinearSolver(PETScMatrix &A, const boost::property_tree::ptree &option);
+
+        template <typename T_KSP_OPTION> void setKSP_Option(T_KSP_OPTION &ksp_opt)
+        {
+            ksp_opt.setOption(_solver);
+        }
+
+        template <typename T_PC_OPTION> void setPC_Option(T_PC_OPTION &pc_opt)
+        {
+            pc_opt.setOption(_pc);
+        }
 
         ~PETScLinearSolver()
         {
-            PCDestroy(_pc);
-            KSPDestroy(_solver);
+            PCDestroy(&_pc);
+            KSPDestroy(&_solver);
         }
 
-        /*!
-            Configure the solver. Call it for re-configuration.
-            \param opt Information to configure a solver.
-        */
-
-        void setOption(const PETScLinearSolverOption &opt);
         /*!
             Solve a system of equations.
             \param b The right hand of the equations.
@@ -60,22 +65,9 @@ class PETScLinearSolver
         void solve(const PETScVector &b, PETScVector &x);
 
     private:
-        KSP *_solver; ///< Slover type.
-        PC *_pc;      ///< Preconditioner type.
-
-        /*!
-            Set option for preconditioner
-            \param set_pc_option Function to set PC options.
-            \param opt           Options for solvers and PCs.
-        */
-        template<typename T_FUNC> void setPC_Option(T_FUNC set_pc_option, const PETScLinearSolverOption &opt);
+        KSP _solver; ///< Slover type.
+        PC _pc;      ///< Preconditioner type.
 };
-
-template<typename T_FUNC> void PETScLinearSolver::
-setPC_Option(T_FUNC set_pc_option, const PETScLinearSolverOption &opt)
-{
-    set_pc_option(*_pc, opt);
-}
 
 } // end namespace
 #endif

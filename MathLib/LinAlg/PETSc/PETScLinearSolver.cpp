@@ -16,77 +16,89 @@
 
 #include "PETScLinearSolver.h"
 
+#include "PETScLinearSolverOption.h"
+
 namespace MathLib
 {
-// Set ILU/ICC preconditioner options
-void setPETSC_PC_OptionILU(PC pc, const PETScLinearSolverOption &opt);
-
-// Set SOR/SSOR preconditioner options
-void setPETSC_PC_OptionSOR(PC pc, const PETScLinearSolverOption &opt);
+using boost::property_tree::ptree;
 
 PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
-                                     const std::string solver_name, const std::string pc_name)
-    : _solver(NULL), _pc(NULL)
+                                     const boost::property_tree::ptree &option)
 {
-    KSPCreate(PETSC_COMM_WORLD, _solver);
-    KSPSetOperators(*_solver, A.getRawMatrix(), A.getRawMatrix(), DIFFERENT_NONZERO_PATTERN);
+    KSPCreate(PETSC_COMM_WORLD, &_solver);
+    KSPSetOperators(_solver, A.getRawMatrix(), A.getRawMatrix(), DIFFERENT_NONZERO_PATTERN);
 
-    KSPSetType(*_solver, solver_name.c_str());
-    KSPGetPC(*_solver, _pc);
-    PCSetType(*_pc, pc_name.c_str());
-}
-
-void PETScLinearSolver::setOption(const PETScLinearSolverOption &opt)
-{
-    // --------------------------------------------------------------
-    // Preconditioner:
-    if(_pc)
+    boost::optional<ptree> pt_solver = option.get_child("LinearSolver");
+    if(!pt_solver)
     {
-        PCDestroy(_pc);
-    }
-    KSPSetType(*_solver, opt.solver_name.c_str());
-    KSPGetPC(*_solver, _pc);
-    PCSetType(*_pc, opt.pc_name.c_str());
-    KSPSetPCSide(*_solver, opt.preco_side);
-
-    if(   opt.pc_name.find("ilu") != std::string::npos
-            || opt.pc_name.find("icc") != std::string::npos )
-    {
-        setPC_Option(setPETSC_PC_OptionILU, opt);
+        PetscPrintf(PETSC_COMM_WORLD,"\n*** PETSc linear solver is not specified, bcgs + bjacobi are used.\n");
+        return;
     }
 
-    if(opt.pc_name.find("sor") != std::string::npos)
+    // Preconditioners:
+    boost::optional<ptree> pt_pc = option.get_child("Preconditioner");
+    if(!pt_pc)
     {
-        setPC_Option(setPETSC_PC_OptionSOR, opt);
+        PetscPrintf(PETSC_COMM_WORLD,"\n*** PETSc preconditioner is not specified, bjacobi is used.");
+        return;
     }
 
+    // Base configuration
+    PETScLinearSolverOption opt(*pt_solver, *pt_pc);
+    opt.setOption(_solver, _pc);
 
-    // --------------------------------------------------------------
-    // Solver:
-    if(opt.solver_name.find("richardson") != std::string::npos)
+    //----------------------------------------------------------------------
+    // Specific configuration, solver
+    boost::optional<ptree> pt_solver_spec = pt_solver->get_child("Richards");
+    if(pt_solver_spec)
     {
-        KSPRichardsonSetScale(*_solver, opt.damping_factor_richards);
+        PETScPC_KSP_Richards_Option ksp_opt(*pt_solver_spec);
+        setKSP_Option(ksp_opt);
     }
 
-    if(opt.solver_name.find("chebychev") != std::string::npos)
+    pt_solver_spec = pt_solver->get_child("Chebyshev");
+    if(pt_solver_spec)
     {
-        KSPChebyshevSetEigenvalues(*_solver, opt.emax_chebyshev, opt.emin_chebyshev);
+        PETScPC_KSP_Chebyshev_Option ksp_opt(*pt_solver_spec);
+        setKSP_Option(ksp_opt);
     }
 
-    if(opt.solver_name.find("gmres") != std::string::npos)
+    pt_solver_spec = pt_solver->get_child("gmres");
+    if(pt_solver_spec)
     {
-        KSPGMRESSetRestart(*_solver, opt.restart_number_gmres);
+        PETScPC_KSP_GMRES_Option ksp_opt(*pt_solver_spec);
+        setKSP_Option(ksp_opt);
+    }
 
-        if(opt.is_modified_gram_schmidt_gmres)
+    //----------------------------------------------------------------------
+    // Specific configuration, preconditioner
+
+    // ILU or ICC
+    boost::optional<ptree> pt_pc_spec = pt_pc->get_child("ilu");
+    if(pt_pc_spec)
+    {
+        PETScPC_ILU_Option pc_opt(*pt_pc_spec);
+        setPC_Option(pc_opt);
+    }
+    else
+    {
+        pt_pc_spec = pt_pc->get_child("icc");
+        if(pt_pc_spec)
         {
-            KSPGMRESSetOrthogonalization(*_solver, KSPGMRESClassicalGramSchmidtOrthogonalization);
+            PETScPC_ILU_Option pc_opt(*pt_pc_spec);
+            setPC_Option(pc_opt);
         }
-
-        KSPGMRESSetCGSRefinementType(*_solver, opt.refine_type_gmres);
     }
 
-    KSPSetTolerances(*_solver, opt.rtol, opt.atol, opt.dtol, opt.max_it);
-    KSPSetFromOptions(*_solver);  // set running time option
+    pt_pc_spec = pt_pc->get_child("sor");
+    if(pt_pc_spec)
+    {
+        PETScPC_SOR_Option pc_opt(*pt_pc_spec);
+        setPC_Option(pc_opt);
+    }
+
+    //
+    KSPSetFromOptions(_solver);  // set running time option
 }
 
 
@@ -98,10 +110,10 @@ void PETScLinearSolver::solve(const PETScVector &b, PETScVector &x)
     PetscMemoryGetCurrentUsage(&mem1);
 #endif
 
-    KSPSolve(*_solver, b.getData(), x.getData());
+    KSPSolve(_solver, b.getData(), x.getData());
 
     KSPConvergedReason reason;
-    KSPGetConvergedReason(*_solver, &reason);
+    KSPGetConvergedReason(_solver, &reason);
 
     if(reason == KSP_DIVERGED_INDEFINITE_PC)
     {
@@ -116,15 +128,15 @@ void PETScLinearSolver::solve(const PETScVector &b, PETScVector &x)
     {
         const char *slv_type;
         const char *prc_type;
-        KSPGetType(*_solver, &slv_type);
-        PCGetType(*_pc, &prc_type);
+        KSPGetType(_solver, &slv_type);
+        PCGetType(_pc, &prc_type);
 
         PetscPrintf(PETSC_COMM_WORLD,"\n================================================");
         PetscPrintf(PETSC_COMM_WORLD, "\nLinear solver %s with %s preconditioner",
                     slv_type, prc_type);
 
         int its;
-        KSPGetIterationNumber(*_solver, &its);
+        KSPGetIterationNumber(_solver, &its);
         PetscPrintf(PETSC_COMM_WORLD,"\nConvergence in %d iterations.\n", its);
         PetscPrintf(PETSC_COMM_WORLD,"\n================================================");
     }
@@ -134,38 +146,6 @@ void PETScLinearSolver::solve(const PETScVector &b, PETScVector &x)
     PetscMemoryGetCurrentUsage(&mem2);
     PetscPrintf(PETSC_COMM_WORLD, "###Memory usage by solver. Before :%f After:%f Increase:%d\n", mem1, mem2, (int)(mem2 - mem1));
 #endif
-}
-
-void setPETSC_PC_OptionILU(PC pc, const PETScLinearSolverOption &opt)
-{
-    PCFactorSetLevels(pc, opt.pc_ilu.levels);
-
-    if(opt.pc_ilu.reuse_ordering)
-    {
-        PCFactorSetReuseOrdering(pc, PETSC_TRUE);
-    }
-
-    if(opt.pc_ilu.reuse_fill)
-    {
-        PCFactorSetReuseFill(pc, PETSC_TRUE);
-    }
-
-    if(opt.pc_ilu.use_in_place)
-    {
-        PCFactorSetUseInPlace(pc);
-    }
-
-    if(opt.pc_ilu.allow_diagonal_fill)
-    {
-        PCFactorSetAllowDiagonalFill(pc);
-    }
-}
-
-void setPETSC_PC_OptionSOR(PC pc, const PETScLinearSolverOption &opt)
-{
-    PCSORSetOmega(pc, opt.pc_sor.omega);
-    PCSORSetIterations(pc, opt.pc_sor.its, opt.pc_sor.lits);
-    PCSORSetSymmetric(pc, opt.pc_sor.type);
 }
 
 } //end of namespace
