@@ -26,7 +26,7 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
     KSPCreate(PETSC_COMM_WORLD, &_solver);
     KSPSetOperators(_solver, A.getRawMatrix(), A.getRawMatrix(), DIFFERENT_NONZERO_PATTERN);
 
-    boost::optional<ptree> pt_solver = option.get_child("LinearSolver");
+    boost::optional<ptree> pt_solver = option.get_child("linear_solver");
     if(!pt_solver)
     {
         PetscPrintf(PETSC_COMM_WORLD,"\n*** PETSc linear solver is not specified, bcgs + bjacobi are used.\n");
@@ -34,7 +34,7 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
     }
 
     // Preconditioners:
-    boost::optional<ptree> pt_pc = option.get_child("Preconditioner");
+    boost::optional<ptree> pt_pc = option.get_child("preconditioner");
     if(!pt_pc)
     {
         PetscPrintf(PETSC_COMM_WORLD,"\n*** PETSc preconditioner is not specified, bjacobi is used.");
@@ -43,7 +43,10 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
 
     // Base configuration
     PETScLinearSolverOption opt(*pt_solver, *pt_pc);
+          
     opt.setOption(_solver, _pc);
+
+// To be extend:
 
     //----------------------------------------------------------------------
     // Specific configuration, solver
@@ -101,6 +104,20 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
         setPC_Option(pc_opt);
     }
 
+    pt_pc_spec = pt_pc->get_child("asm");
+    if(pt_pc_spec)
+    {
+        PETScPC_ASM_Option pc_opt(*pt_pc_spec);
+        setPC_Option(pc_opt);
+    }
+
+    pt_pc_spec = pt_pc->get_child("amg");
+    if(pt_pc_spec)
+    {
+        PETScPC_AMG_Option pc_opt(*pt_pc_spec);
+        setPC_Option(pc_opt);
+    }  
+           
     //
     KSPSetFromOptions(_solver);  // set running time option
 }

@@ -29,6 +29,8 @@
 #include "PC_Option/PETScPC_ILU_Option.h"
 #include "PC_Option/PETScPC_SOR_Option.h"
 #include "PC_Option/PETScPC_LU_Option.h"
+#include "PC_Option/PETScPC_ASM_Option.h"
+#include "PC_Option/PETScPC_AMG_Option.h"
 
 namespace MathLib
 {
@@ -61,7 +63,6 @@ class PETScLinearSolver
 
         ~PETScLinearSolver()
         {
-            PCDestroy(&_pc);
             KSPDestroy(&_solver);
         }
 

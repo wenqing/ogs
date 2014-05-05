@@ -21,9 +21,17 @@
 #include "MathLib/LinAlg/Dense/DenseTools.h"
 #include "MathLib/LinAlg/FinalizeMatrixAssembly.h"
 #include "MathLib/LinAlg/Solvers/GaussAlgorithm.h"
+
 #ifdef USE_LIS
 #include "MathLib/LinAlg/Lis/LisLinearSolver.h"
 #include "MathLib/LinAlg/Lis/LisTools.h"
+#endif
+
+#ifdef USE_PETSC
+#include "MathLib/LinAlg/PETSc/PETScMatrix.h"
+#include "MathLib/LinAlg/PETSc/PETScVector.h"
+#include "MathLib/LinAlg/PETSc/PETScLinearSolver.h"
+#include "MathLib/LinAlg/PETSc/PETScTools.h"
 #endif
 
 #include "../TestTools.h"
@@ -112,6 +120,70 @@ void checkLinearSolverInterface(T_MATRIX &A, boost::property_tree::ptree &ls_opt
 
 }
 
+#ifdef USE_PETSC
+template <class T_MATRIX, class T_VECTOR, class T_LINEAR_SOVLER>
+void checkLinearSolverInterface(T_MATRIX &A, T_VECTOR &b, boost::property_tree::ptree &ls_option)
+{	
+    int mrank;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &mrank);
+    // Add entries
+    MathLib::DenseMatrix<double> loc_m(2, 2);
+    loc_m(0, 0) = 1. +  mrank;
+    loc_m(0, 1) = 2. +  mrank;
+    loc_m(1, 0) = 3. +  mrank;
+    loc_m(1, 1) = 4. +  mrank;
+
+    std::vector<int> row_pos(2);
+    std::vector<int> col_pos(2);
+    row_pos[0] = 2 * mrank;
+    row_pos[1] = 2 * mrank + 1;
+    col_pos[0] = row_pos[0];
+    col_pos[1] = row_pos[1];
+
+    A.add(row_pos, col_pos, loc_m);
+
+    MathLib::finalizeMatrixAssembly(A);
+    
+    const bool deep_copy = false;
+    T_VECTOR x(b, deep_copy);
+
+    std::vector<double> local_vec(2);
+    local_vec[0] = mrank+1;
+    local_vec[1] = 2. * (mrank+1);
+    x.set(col_pos, local_vec);    
+
+    double x0[6];
+    double x1[6];
+    x.getGlobalVector(x0);
+     
+    A.multiply(x, b);
+ 
+    // apply BC
+    std::vector<int> bc_id;  /// Type must be int to match Petsc_Int
+    std::vector<double> bc_value; 
+    
+    if(mrank == 1)
+    {
+		bc_id.resize(1);
+		bc_value.resize(1);
+		bc_id[0] = 2 * mrank;
+		bc_value[0] = mrank+1;
+	}
+    
+    MathLib::applyKnownSolution(A, b, x, bc_id, bc_value);
+
+    MathLib::finalizeMatrixAssembly(A);
+    
+
+    // solve
+    T_LINEAR_SOVLER ls(A, ls_option);
+    ls.solve(b, x);    
+    x.getGlobalVector(x1);
+
+    ASSERT_ARRAY_NEAR(x0, x1, 6, 1e-5);
+}
+#endif
+
 } // end namespace
 
 TEST(MathLib, CheckInterface_GaussAlgorithm)
@@ -141,4 +213,41 @@ TEST(Math, CheckInterface_Lis)
     checkLinearSolverInterface<MathLib::LisMatrix, MathLib::LisVector, MathLib::LisLinearSolver>(A, t_root);
 }
 #endif
+
+#ifdef USE_PETSC
+TEST(Math, CheckInterface_PETSc_Linear_Solver)
+{
+
+    MathLib::PETScMatrixOption opt;
+    opt.d_nz = 2;
+    opt.o_nz = 0;
+    opt.is_global_size = false;
+    opt.n_local_cols = 2;
+    MathLib::PETScMatrix A(2, opt);
+
+    const bool is_gloabal_size = false;
+    MathLib::PETScVector b(2, is_gloabal_size);
+
+    // set solver options using Boost property tree
+    boost::property_tree::ptree t_root;
+    boost::property_tree::ptree t_solver;
+    t_root.put("solver_package", "PETSc");
+    t_solver.put("solver_type", "bcgs");
+    t_solver.put("rtol", 1e-7);
+    t_solver.put("atol", 1e-50);
+    t_solver.put("max_it", 1000);
+    t_solver.put("pc_side", "left");    
+    t_root.put_child("linear_solver", t_solver);
+    
+    boost::property_tree::ptree t_pc;
+    t_pc.put("pc_type", "bjacobi");
+    t_root.put_child("preconditioner", t_pc);
+    
+    checkLinearSolverInterface<MathLib::PETScMatrix, MathLib::PETScVector, 
+    MathLib::PETScLinearSolver>(A, b, t_root);
+
+}
+
+#endif
+
 
