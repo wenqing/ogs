@@ -14,7 +14,6 @@
 #ifndef PETSCPC_ILU_OPTION_H_
 #define PETSCPC_ILU_OPTION_H_
 
-#include <string>
 #include <boost/property_tree/ptree.hpp>
 
 #include <petscksp.h>

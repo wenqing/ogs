@@ -16,8 +16,6 @@
 
 #include "PETScLinearSolver.h"
 
-#include "PETScLinearSolverOption.h"
-
 namespace MathLib
 {
 using boost::property_tree::ptree;

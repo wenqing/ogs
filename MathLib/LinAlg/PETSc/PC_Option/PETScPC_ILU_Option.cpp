@@ -1,5 +1,5 @@
 /*!
-   \file  PETScPC_ILU_Option.h
+   \file  PETScPC_ILU_Option.cpp
    \brief Define the configuration data for PETSc ILU preconditioner.
 
    \author Wenqing Wang
@@ -12,7 +12,7 @@
                http://www.opengeosys.org/project/license
 */
 
-#include "PETScLinearSolverOption.h"
+#include "PETScPC_ILU_Option.h"
 
 namespace MathLib
 {

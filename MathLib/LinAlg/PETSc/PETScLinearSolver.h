@@ -22,6 +22,14 @@
 
 #include "PETScLinearSolverOption.h"
 
+#include "KSP_Option/PETScPC_KSP_Chebyshev_Option.h"
+#include "KSP_Option/PETScPC_KSP_Richards_Option.h"
+#include "KSP_Option/PETScPC_KSP_GMRES_Option.h"
+
+#include "PC_Option/PETScPC_ILU_Option.h"
+#include "PC_Option/PETScPC_SOR_Option.h"
+#include "PC_Option/PETScPC_LU_Option.h"
+
 namespace MathLib
 {
 
