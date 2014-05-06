@@ -20,6 +20,42 @@ namespace MathLib
 using boost::property_tree::ptree;
 
 PETScLinearSolverOption::
+PETScLinearSolverOption(const boost::property_tree::ptree &ksp_option)
+    : _solver_name("bcgs"), _pc_name("bjacobi"), _preco_side(PC_LEFT),
+      _max_it(2000), _rtol(1.e-5), _atol(PETSC_DEFAULT), _dtol(PETSC_DEFAULT)
+{
+    auto solver_type = ksp_option.get_optional<std::string>("solver_type");       
+    if(solver_type)
+    {
+        _solver_name = *solver_type;
+    }
+
+    auto max_iteration_step = ksp_option.get_optional<int>("max_it");
+    if(max_iteration_step)
+    {
+        _max_it = *max_iteration_step;
+    }
+
+    auto error_tolerance = ksp_option.get_optional<double>("rtol");
+    if(error_tolerance)
+    {
+        _rtol = *error_tolerance;
+    }
+
+    error_tolerance = ksp_option.get_optional<double>("atol");
+    if(error_tolerance)
+    {
+        _atol = *error_tolerance;
+    }
+
+    error_tolerance = ksp_option.get_optional<double>("dtol");
+    if(error_tolerance)
+    {
+        _dtol = *error_tolerance;
+    }
+}
+
+PETScLinearSolverOption::
 PETScLinearSolverOption(const boost::property_tree::ptree &ksp_option,
                         const boost::property_tree::ptree &pc_option)
     : _solver_name("bcgs"), _pc_name("bjacobi"), _preco_side(PC_LEFT),

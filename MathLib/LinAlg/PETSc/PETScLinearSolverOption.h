@@ -32,6 +32,18 @@ class PETScLinearSolverOption
 
         /*!
             Default constructor
+        */
+        PETScLinearSolverOption() : _solver_name("bcgs"), _pc_name("bjacobi"),
+                                    _preco_side(PC_LEFT),  _max_it(2000), 
+                                    _rtol(1.e-5), _atol(PETSC_DEFAULT), _dtol(PETSC_DEFAULT)
+        {}
+
+        /*!
+            \param ksp_option ptree of basic configuration data for solver
+        */
+        PETScLinearSolverOption(const boost::property_tree::ptree &ksp_option);
+
+        /*!
             \param ksp_option ptree of basic configuration data for solver
             \param pc_option  ptree of basic configuration data for preconditioner
         */

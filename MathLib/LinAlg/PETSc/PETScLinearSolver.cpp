@@ -5,7 +5,7 @@
 
    \author Wenqing Wang
    \version
-   \date Nov 2011 - Sep 2013
+   \date Nov 2011 - Mar 2014
 
    \copyright
    Copyright (c) 2013, OpenGeoSys Community (http://www.opengeosys.org)
@@ -26,18 +26,26 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
     KSPCreate(PETSC_COMM_WORLD, &_solver);
     KSPSetOperators(_solver, A.getRawMatrix(), A.getRawMatrix(), DIFFERENT_NONZERO_PATTERN);
 
-    boost::optional<ptree> pt_solver = option.get_child("linear_solver");
+    boost::optional<const ptree&> pt_solver = option.get_child_optional("linear_solver");
     if(!pt_solver)
     {
-        PetscPrintf(PETSC_COMM_WORLD,"\n*** PETSc linear solver is not specified, bcgs + bjacobi are used.\n");
-        return;
+       PetscPrintf(PETSC_COMM_WORLD,"\n*** PETSc linear solver is not specified, bcgs + bjacobi are used.\n");
+       // Base configuration
+       PETScLinearSolverOption opt;          
+       opt.setOption(_solver, _pc);
+       KSPSetFromOptions(_solver);  // set running time option 
+       return;
     }
 
     // Preconditioners:
-    boost::optional<ptree> pt_pc = option.get_child("preconditioner");
+    boost::optional<const ptree&> pt_pc = option.get_child_optional("preconditioner");
     if(!pt_pc)
     {
         PetscPrintf(PETSC_COMM_WORLD,"\n*** PETSc preconditioner is not specified, bjacobi is used.");
+       // Base configuration
+       PETScLinearSolverOption opt(*pt_solver);          
+       opt.setOption(_solver, _pc);
+       KSPSetFromOptions(_solver);  // set running time option         
         return;
     }
 
@@ -46,35 +54,58 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
           
     opt.setOption(_solver, _pc);
 
-// To be extend:
-
     //----------------------------------------------------------------------
     // Specific configuration, solver
-    boost::optional<ptree> pt_solver_spec = pt_solver->get_child("Richards");
+     boost::optional<const ptree&> pt_solver_spec = pt_solver->get_child_optional("Richards");
+ 
+    
     if(pt_solver_spec)
-    {
+    {		
         PETScPC_KSP_Richards_Option ksp_opt(*pt_solver_spec);
         setKSP_Option(ksp_opt);
-    }
+   }
 
-    pt_solver_spec = pt_solver->get_child("Chebyshev");
+    pt_solver_spec = pt_solver->get_child_optional("Chebyshev");
     if(pt_solver_spec)
     {
         PETScPC_KSP_Chebyshev_Option ksp_opt(*pt_solver_spec);
         setKSP_Option(ksp_opt);
     }
 
-    pt_solver_spec = pt_solver->get_child("gmres");
+    pt_solver_spec = pt_solver->get_child_optional("gmres");
     if(pt_solver_spec)
-    {
+    {		
         PETScPC_KSP_GMRES_Option ksp_opt(*pt_solver_spec);
         setKSP_Option(ksp_opt);
     }
 
     //----------------------------------------------------------------------
     // Specific configuration, preconditioner
+    boost::optional<const ptree&> pt_pc_spec = pt_pc->get_child_optional("sor");
+    if(pt_pc_spec)
+    {
+        PETScPC_SOR_Option pc_opt(*pt_pc_spec);
+        setPC_Option(pc_opt);
+    }
+ 
+    pt_pc_spec = pt_pc->get_child_optional("asm");
+    if(pt_pc_spec)
+    {
+        PETScPC_ASM_Option pc_opt(*pt_pc_spec);
+        setPC_Option(pc_opt);
+    }
+
+    pt_pc_spec = pt_pc->get_child_optional("amg");
+    if(pt_pc_spec)
+    {
+        PETScPC_AMG_Option pc_opt(*pt_pc_spec);
+        setPC_Option(pc_opt);
+    }  
+   
+    //----------------------------------------------------------------------------
+    // Only for sub-block preconditioner or sequential computation if it is needed.          
     // ILU or ICC
-    boost::optional<ptree> pt_pc_spec = pt_pc->get_child("ilu");
+    pt_pc_spec = pt_pc->get_child_optional("ilu");
     if(pt_pc_spec)
     {
         PETScPC_ILU_Option pc_opt(*pt_pc_spec);
@@ -82,7 +113,7 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
     }
     else
     {
-        pt_pc_spec = pt_pc->get_child("icc");
+        pt_pc_spec = pt_pc->get_child_optional("icc");
         if(pt_pc_spec)
         {
             PETScPC_ILU_Option pc_opt(*pt_pc_spec);
@@ -90,34 +121,14 @@ PETScLinearSolver::PETScLinearSolver(PETScMatrix &A,
         }
     }
 
-    pt_pc_spec = pt_pc->get_child("sor");
-    if(pt_pc_spec)
-    {
-        PETScPC_SOR_Option pc_opt(*pt_pc_spec);
-        setPC_Option(pc_opt);
-    }
-
-    pt_pc_spec = pt_pc->get_child("lu");
+    pt_pc_spec = pt_pc->get_child_optional("lu");
     if(pt_pc_spec)
     {
         PETScPC_LU_Option pc_opt(*pt_pc_spec);
         setPC_Option(pc_opt);
     }
-
-    pt_pc_spec = pt_pc->get_child("asm");
-    if(pt_pc_spec)
-    {
-        PETScPC_ASM_Option pc_opt(*pt_pc_spec);
-        setPC_Option(pc_opt);
-    }
-
-    pt_pc_spec = pt_pc->get_child("amg");
-    if(pt_pc_spec)
-    {
-        PETScPC_AMG_Option pc_opt(*pt_pc_spec);
-        setPC_Option(pc_opt);
-    }  
-           
+    //----------------------------------------------------------------------------
+            
     //
     KSPSetFromOptions(_solver);  // set running time option
 }

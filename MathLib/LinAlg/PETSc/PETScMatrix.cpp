@@ -91,7 +91,7 @@ void PETScMatrix::create(const PetscInt d_nz, const PetscInt o_nz)
 
     MatSetFromOptions(_A);
 
-    // for a dense matrix: MatSeqAIJSetPreallocation(_A, d_nz, PETSC_NULL);
+    MatSeqAIJSetPreallocation(_A, d_nz, PETSC_NULL);
     MatMPIAIJSetPreallocation(_A, d_nz, PETSC_NULL, o_nz, PETSC_NULL);
 
     MatGetOwnershipRange(_A, &_start_rank, &_end_rank);
