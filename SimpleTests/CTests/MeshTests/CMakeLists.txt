@@ -43,11 +43,9 @@ ExternalData_Add_Test(
     COMMAND  "mpirun" ${MPITestParameters} 
 )
 
-set(FilePath "DATA{${ExternalData_SOURCE_ROOT}/NodePartitionedMesh/ASCII/,REGEX:.*}")
-set(MPITestParameters -np 3 "${PROJECT_BINARY_DIR}/bin/test_node_partitioned_mesh" "${FilePath}/mesh_3d")
 AddTest(
     NAME test_under_mpi
-    PATH ${ExternalData_SOURCE_ROOT}/NodePartitionedMesh/ASCII
+    PATH ${ExternalData_SOURCE_ROOT}/NodePartitionedMesh/Binary
     EXECUTABLE ls  #test_node_partitioned_mesh
 #    WRAPPER mpirun
 #    WRAPPER_ARGS "-np 3" #${MPITestParameters} 
