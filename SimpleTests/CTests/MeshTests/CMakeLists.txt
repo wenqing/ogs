@@ -46,11 +46,11 @@ ExternalData_Add_Test(
 AddTest(
     NAME test_under_mpi
     PATH ${ExternalData_SOURCE_ROOT}/NodePartitionedMesh/Binary
-    EXECUTABLE ls  #test_node_partitioned_mesh
-#    WRAPPER mpirun
-#    WRAPPER_ARGS "-np 3" #${MPITestParameters} 
+    EXECUTABLE ls # ${PROJECT_BINARY_DIR}/bin/test_node_partitioned_mesh
+    WRAPPER mpirun
+    WRAPPER_ARGS "-np 3" #"{MPITestParameters}" 
     TESTER diff
-    DATA {${ExternalData_SOURCE_ROOT}/NodePartitionedMesh/ASCII/,REGEX:.}
+    DATA {${ExternalData_SOURCE_ROOT}/NodePartitionedMesh/Binary/,REGEX:.}
     DIFF_DATA mesh_3d_partition_0.msh mesh_3d_partition_1.msh mesh_3d_partition_2.msh
 )
 
