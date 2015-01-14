@@ -125,7 +125,7 @@ MeshLib::NodePartitionedMesh* NodePartitionedMeshReader::readBinary(
     // Read Nodes
     std::vector<NodeData> nodes(static_cast<std::size_t>(_mesh_info.nodes));
 
-    if (!readBinaryDataFromFile(fname_header + "nod" + fname_num_p_ext,
+    if(!readBinaryDataFromFile(fname_header + "nod" + fname_num_p_ext,
              static_cast<MPI_Offset>(_mesh_info.offset[2]), _mpi_node_type, nodes))
         return nullptr;
 
@@ -138,7 +138,7 @@ MeshLib::NodePartitionedMesh* NodePartitionedMeshReader::readBinary(
 
     std::vector<long> elem_data(static_cast<std::size_t>(
         _mesh_info.regular_elements + _mesh_info.offset[0]));
-    if (!readBinaryDataFromFile(fname_header +"ele" + fname_num_p_ext,
+    if(!readBinaryDataFromFile(fname_header +"ele" + fname_num_p_ext,
             static_cast<MPI_Offset>(_mesh_info.offset[3]), MPI_LONG, elem_data))
         return nullptr;
 
@@ -151,7 +151,7 @@ MeshLib::NodePartitionedMesh* NodePartitionedMeshReader::readBinary(
     std::vector<long> ghost_elem_data(static_cast<std::size_t>(
         _mesh_info.ghost_elements + _mesh_info.offset[1]));
 
-    if (!readBinaryDataFromFile(fname_header + "ele_g" + fname_num_p_ext,
+    if(!readBinaryDataFromFile(fname_header + "ele_g" + fname_num_p_ext,
             static_cast<MPI_Offset>(_mesh_info.offset[4]), MPI_LONG, ghost_elem_data))
         return nullptr;
 
