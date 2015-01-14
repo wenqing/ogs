@@ -87,7 +87,7 @@ class NodePartitionedMeshReader
             long global_base_nodes;   //< 6:    Number of nodes for linear element of global mesh,
             long global_nodes;        //< 7:    Number of all nodes of global mesh,
             long offset[5];           //< 8~12: Offsets of positions of partitions in the data arrays
-            ///       (only 8 and 9 are used for ascii input)
+                                      ///<     (only 8 and 9 are used for ascii input)
             long extra_flag;          //< 13:   Reserved for extra flag.
 
             std::size_t size() const
@@ -102,19 +102,13 @@ class NodePartitionedMeshReader
         } _mesh_info;
 
         /*!
-            \brief Parallel reading of a binary file via MPI_File_read, and it is called by readBinary
-                   to read files of mesh data head, nodes, non-ghost elements and ghost elements, respectively.
-            \note           In case of failure during opening of the file, an
-                            error message is printed.
-            \param filename File name containing data.
-            \param offset   Displacement of the data accessible from the view;
-                            see MPI_File_set_view() documentation.
-            \param type     Type of data.
-            \param data     A container to be filled with data. Its size is used
-                            to determine how many values should be read.
-            \tparam DATA    A homogeneous contaner type supporting data() and size().
+            \brief Create a new mesh of NodePartitionedMesh after reading and processing the data
+            \param mesh_name    Name assigned to the new mesh.
+            \param mesh_nodes   Node data.
+            \param glb_node_ids Global IDs of nodes.
+            \param mesh_elems   Element data.
             \return         True on success and false otherwise.
-          */
+        */
         MeshLib::NodePartitionedMesh* newMesh(std::string const& mesh_name,
                                               std::vector<MeshLib::Node*> const& mesh_nodes,
                                               std::vector<std::size_t> const& glb_node_ids,
@@ -126,14 +120,14 @@ class NodePartitionedMeshReader
             \note           In case of failure during opening of the file, an
                             error message is printed.
             \param filename File name containing data.
-            \param offset   Displacement of the data accessible from the view;
+            \param offset   Displacement of the data accessible from the view.
                             see MPI_File_set_view() documentation.
             \param type     Type of data.
             \param data     A container to be filled with data. Its size is used
                             to determine how many values should be read.
             \tparam DATA    A homogeneous contaner type supporting data() and size().
             \return         True on success and false otherwise.
-         */
+        */
         template <typename DATA>
         bool readBinaryDataFromFile(std::string const& filename, MPI_Offset offset,
                                     MPI_Datatype type, DATA& data) const;
