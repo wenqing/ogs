@@ -429,7 +429,7 @@ void NodePartitionedMeshReader::setElements(
     const long ne = ghost ? _mesh_info.ghost_elements : _mesh_info.regular_elements;
     const long id_offset = ghost ? _mesh_info.regular_elements : 0;
 
-    for(std::size_t i=0; i < ne; i++)
+    for(std::size_t i=0; i<static_cast<std::size_t>(ne); i++)
     {
         std::size_t counter = elem_data[i];
 
@@ -438,7 +438,7 @@ void NodePartitionedMeshReader::setElements(
         const long nnodes = elem_data[counter++];
 
         MeshLib::Node **elem_nodes = new MeshLib::Node*[nnodes];
-        for(std::size_t k=0; k<nnodes; k++)
+        for(std::size_t k=0; k<static_cast<std::size_t>(nnodes); k++)
             elem_nodes[k] = mesh_nodes[ elem_data[counter++] ];
 
         MeshLib::Element *elem = nullptr;
