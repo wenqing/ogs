@@ -279,8 +279,8 @@ void NodePartitionedMeshReader::readCastElemsASCII(std::ifstream& is_elem,
         if(part_id == 0)
         {
             if(!process_ghost)
-                mesh_elems.resize(_mesh_info.regular_elements +
-                                  _mesh_info.ghost_elements);
+                mesh_elems.resize(static_cast<std::size_t>(_mesh_info.regular_elements +
+                                  _mesh_info.ghost_elements) );
             setElements(mesh_nodes, elem_data, mesh_elems, process_ghost);
         }
         else
@@ -293,8 +293,8 @@ void NodePartitionedMeshReader::readCastElemsASCII(std::ifstream& is_elem,
         MPI_Recv(elem_data.data(), BaseLib::toInt(data_size), MPI_LONG, 0, message_tag, _mpi_comm, MPI_STATUS_IGNORE);
 
         if(!process_ghost)
-            mesh_elems.resize(_mesh_info.regular_elements +
-                              _mesh_info.ghost_elements);
+            mesh_elems.resize(static_cast<std::size_t>(_mesh_info.regular_elements +
+                              _mesh_info.ghost_elements) );
         setElements(mesh_nodes, elem_data, mesh_elems, process_ghost);
     }
 }
