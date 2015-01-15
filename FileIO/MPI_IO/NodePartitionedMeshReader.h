@@ -73,7 +73,7 @@ class NodePartitionedMeshReader
         };
 
         /// Define MPI data type for NodeData struct.
-        void registerNodeDataMpiType();
+        void registerMPI_NodeDataType();
 
         /// A collection of integers that congfigure the partitioned mesh data.
         struct PartitionedMeshInfo

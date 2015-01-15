@@ -39,7 +39,7 @@ NodePartitionedMeshReader::NodePartitionedMeshReader(MPI_Comm comm)
     MPI_Comm_size(_mpi_comm, &_mpi_comm_size);
     MPI_Comm_rank(_mpi_comm, &_mpi_rank);
 
-    registerNodeDataMpiType();
+    registerMPI_NodeDataType();
 }
 
 NodePartitionedMeshReader::~NodePartitionedMeshReader()
@@ -48,7 +48,7 @@ NodePartitionedMeshReader::~NodePartitionedMeshReader()
 }
 
 
-void NodePartitionedMeshReader::registerNodeDataMpiType()
+void NodePartitionedMeshReader::registerMPI_NodeDataType()
 {
     int const count = 2;
     int blocks[count] = {1, 3};
