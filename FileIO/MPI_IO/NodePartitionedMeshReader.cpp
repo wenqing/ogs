@@ -1,9 +1,9 @@
 /*!
   \file NodePartitionedMeshReader.cpp
-  \author Wenqing Wang
-  \date   2014.08
   \brief  Define members of class NodePartitionedMeshReader to read node-wise partitioned mesh with MPI functions.
 
+  \author Wenqing Wang
+  \date   2014.08
   \copyright
   Copyright (c) 2012-2014, OpenGeoSys Community (http://www.opengeosys.org)
              Distributed under a Modified BSD License.
@@ -19,6 +19,7 @@
 
 #include "BaseLib/RunTime.h"
 #include "BaseLib/FileTools.h"
+#include "BaseLib/IntegerConverter.h"
 
 #include "MeshLib/Elements/Element.h"
 #include "MeshLib/Elements/Line.h"
@@ -110,7 +111,7 @@ NodePartitionedMeshReader::readBinaryDataFromFile(std::string const& filename,
     // Read data
     char file_mode[] = "native";
     MPI_File_set_view(file, offset, type, type, file_mode, MPI_INFO_NULL);
-    MPI_File_read(file, data.data(), data.size(), type, MPI_STATUS_IGNORE);
+    MPI_File_read(file, data.data(), BaseLib::toInt(data.size()), type, MPI_STATUS_IGNORE);
     MPI_File_close(&file);
 
     return true;
@@ -251,13 +252,13 @@ void NodePartitionedMeshReader::readCastNodesASCII(std::ifstream& is_node,
         }
         else
         {
-            MPI_Send(nodes.data(), _mesh_info.nodes, _mpi_node_type, part_id,
+            MPI_Send(nodes.data(), BaseLib::toInt(_mesh_info.nodes), _mpi_node_type, part_id,
                      message_tag, _mpi_comm);
         }
     }
     else if(part_id > 0 && _mpi_rank == part_id)
     {
-        MPI_Recv(nodes.data(), _mesh_info.nodes, _mpi_node_type, 0,
+        MPI_Recv(nodes.data(), BaseLib::toInt(_mesh_info.nodes), _mpi_node_type, 0,
                  message_tag, _mpi_comm, MPI_STATUS_IGNORE);
         setNodes(nodes, mesh_nodes, glb_node_ids);
     }
@@ -284,12 +285,12 @@ void NodePartitionedMeshReader::readCastElemsASCII(std::ifstream& is_elem,
         }
         else
         {
-            MPI_Send(elem_data.data(), data_size, MPI_LONG, part_id, message_tag, _mpi_comm);
+            MPI_Send(elem_data.data(), BaseLib::toInt(data_size), MPI_LONG, part_id, message_tag, _mpi_comm);
         }
     }
     else if(part_id > 0 && _mpi_rank == part_id)
     {
-        MPI_Recv(elem_data.data(), data_size, MPI_LONG, 0, message_tag, _mpi_comm, MPI_STATUS_IGNORE);
+        MPI_Recv(elem_data.data(), BaseLib::toInt(data_size), MPI_LONG, 0, message_tag, _mpi_comm, MPI_STATUS_IGNORE);
 
         if(!process_ghost)
             mesh_elems.resize(_mesh_info.regular_elements +
@@ -343,7 +344,7 @@ MeshLib::NodePartitionedMesh* NodePartitionedMeshReader::readASCII(
             is_cfg >> std::ws;
         }
 
-        MPI_Bcast(_mesh_info.data(), _mesh_info.size(), MPI_LONG, 0, _mpi_comm);
+        MPI_Bcast(_mesh_info.data(), BaseLib::toInt(_mesh_info.size()), MPI_LONG, 0, _mpi_comm);
 
         //----------------------------------------------------------------------------------
         // Read Nodes
