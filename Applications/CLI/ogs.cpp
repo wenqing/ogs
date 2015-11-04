@@ -92,9 +92,9 @@ int main(int argc, char *argv[])
 	cmd.add(project_arg);
 	cmd.parse(argc, argv);
 
-	ApplicationsLib::LogogSetup logog_setup;
 	ApplicationsLib::LinearSolverLibrarySetup linear_solver_library_setup(
 	    argc, argv);
+	ApplicationsLib::LogogSetup logog_setup;
 
 	// Project's configuration
 	BaseLib::ConfigTree project_config =

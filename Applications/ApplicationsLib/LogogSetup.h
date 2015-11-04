@@ -12,7 +12,8 @@
 
 #include <logog/include/logog.hpp>
 
-#include "BaseLib/LogogSimpleFormatter.h"
+#include "BaseLib/LogogCustomCout.h"
+#include "BaseLib/TemplateLogogFormatterSuppressedGCC.h"
 
 namespace ApplicationsLib
 {
@@ -25,8 +26,9 @@ public:
 	LogogSetup()
 	{
 		LOGOG_INITIALIZE();
-		fmt = new BaseLib::LogogSimpleFormatter;
-		logog_cout = new logog::Cout;
+		fmt = new BaseLib::TemplateLogogFormatterSuppressedGCC<TOPIC_LEVEL_FLAG
+		                      | TOPIC_FILE_NAME_FLAG | TOPIC_LINE_NUMBER_FLAG>;
+		logog_cout = new BaseLib::LogogCustomCout;
 		logog_cout->SetFormatter(*fmt);
 	}
 
@@ -38,8 +40,9 @@ public:
 	}
 
 private:
-	BaseLib::LogogSimpleFormatter* fmt;
-	logog::Cout* logog_cout;
+	BaseLib::TemplateLogogFormatterSuppressedGCC<TOPIC_LEVEL_FLAG
+	               | TOPIC_FILE_NAME_FLAG | TOPIC_LINE_NUMBER_FLAG>* fmt;
+	BaseLib::LogogCustomCout* logog_cout;
 };
 
 }	// ApplicationsLib

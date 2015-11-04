@@ -35,7 +35,7 @@ template <int T_SUPPPRESS_TOPIC_FLAG>
 class TemplateLogogFormatterSuppressedGCC : public logog::FormatterGCC
 {
 public:
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_PETSC)
 	TemplateLogogFormatterSuppressedGCC(MPI_Comm mpi_comm = MPI_COMM_WORLD);
 #endif
 
@@ -48,7 +48,7 @@ public:
 	virtual LOGOG_STRING &Format( const logog::Topic &topic, const logog::Target &target );
 
 private:
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_PETSC)
 	std::string _str_mpi_rank;
 #endif
 };

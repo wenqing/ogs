@@ -9,7 +9,7 @@
 
 namespace BaseLib {
 
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_PETSC)
 template <int T_SUPPPRESS_TOPIC_FLAG>
 TemplateLogogFormatterSuppressedGCC<T_SUPPPRESS_TOPIC_FLAG>
 ::TemplateLogogFormatterSuppressedGCC(MPI_Comm mpi_comm)
@@ -33,7 +33,7 @@ TemplateLogogFormatterSuppressedGCC<T_SUPPPRESS_TOPIC_FLAG>
 
 	m_sMessageBuffer.clear();
 
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_PETSC)
 	m_sMessageBuffer.append(_str_mpi_rank.c_str());
 #endif
 
