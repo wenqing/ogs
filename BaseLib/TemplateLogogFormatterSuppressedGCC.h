@@ -17,10 +17,13 @@
 
 #include <string>
 
-#include "logog/include/logog.hpp"
-#ifdef USE_MPI
+#if defined(USE_PETSC)
+#include <petsc.h>
+#elif defined(USE_MPI)
 #include <mpi.h>
 #endif
+
+#include "logog/include/logog.hpp"
 
 #include "StringTools.h"
 
@@ -35,8 +38,10 @@ template <int T_SUPPPRESS_TOPIC_FLAG>
 class TemplateLogogFormatterSuppressedGCC : public logog::FormatterGCC
 {
 public:
-#if defined(USE_MPI) || defined(USE_PETSC)
+#if defined(USE_MPI)
 	TemplateLogogFormatterSuppressedGCC(MPI_Comm mpi_comm = MPI_COMM_WORLD);
+#elif defined(USE_PETSC)
+	TemplateLogogFormatterSuppressedGCC(MPI_Comm mpi_comm = PETSC_COMM_WORLD);
 #endif
 
 	virtual TOPIC_FLAGS GetTopicFlags( const logog::Topic &topic )

@@ -12,11 +12,13 @@
 
 #include <ostream>
 
-#include "logog/include/logog.hpp"
-
-#ifdef USE_MPI
+#if defined(USE_PETSC)
+#include <petsc.h>
+#elif defined(USE_MPI)
 #include <mpi.h>
 #endif
+
+#include "logog/include/logog.hpp"
 
 namespace BaseLib
 {
@@ -25,21 +27,25 @@ namespace BaseLib
 class LogogCustomCout : public logog::Target
 {
 public:
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_PETSC)
 	/**
 	 * Constructor when MPI is involved
 	 *
 	 * @param all_rank_output_level  Minimum level to output messages from all MPI processes
 	 * @param mpi_comm               MPI communicator
 	 */
+#if defined(USE_PETSC)
+	LogogCustomCout(LOGOG_LEVEL_TYPE all_rank_output_level = LOGOG_LEVEL_INFO, MPI_Comm mpi_comm = PETSC_COMM_WORLD)
+#elif defined(USE_MPI)
 	LogogCustomCout(LOGOG_LEVEL_TYPE all_rank_output_level = LOGOG_LEVEL_INFO, MPI_Comm mpi_comm = MPI_COMM_WORLD)
+#endif
 	: _all_rank_output_level(all_rank_output_level), _is_rank0 (getRank(mpi_comm)==0)
 	{}
 #endif
 
 	virtual int Receive( const logog::Topic &topic )
 	{
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_PETSC)
 		if (topic.Level() > _all_rank_output_level && !_is_rank0)
 			return 0;
 #endif
@@ -48,12 +54,15 @@ public:
 
 	virtual int Output( const LOGOG_STRING &data )
 	{
+#if defined(USE_MPI) || defined(USE_PETSC)
+		if (_is_rank0)
+#endif
 		LOGOG_COUT << (const LOGOG_CHAR *)data << std::flush;
 		return 0;
 	}
 
 private:
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_PETSC)
 	int getRank(MPI_Comm mpi_comm) const
 	{
 		int rank = 0;
