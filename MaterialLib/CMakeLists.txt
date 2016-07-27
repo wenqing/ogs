@@ -1,32 +1,24 @@
-#Source files grouped by a directory
-GET_SOURCE_FILES(SOURCES_MATERIALLIB)
-set ( SOURCES ${SOURCES_MATERIALLIB})
+# Source files
+get_source_files(SOURCES)
+get_source_files(SOURCES_ADSORPTION Adsorption)
+set(SOURCES ${SOURCES} ${SOURCES_ADSORPTION})
 
-GET_SOURCE_FILES(SOURCES_FLUID_DENSITY Fluid/Density)
-GET_SOURCE_FILES(SOURCES ${SOURCES} ${SOURCES_FLUID_DENSITY})
+get_source_files(SOURCES_FLUID_DENSITY Fluid/Density)
+set(SOURCES ${SOURCES} ${SOURCES_FLUID_DENSITY})
 
-GET_SOURCE_FILES(SOURCES_PERMEABILITY Fluid/Permeability)
-GET_SOURCE_FILES(SOURCES ${SOURCES} ${SOURCES_PERMEABILITY})
+get_source_files(SOURCES_PERMEABILITY Fluid/Permeability)
+set(SOURCES ${SOURCES} ${SOURCES_PERMEABILITY})
 
-GET_SOURCE_FILES(SOURCES_STORAGE Fluid/Storage)
-GET_SOURCE_FILES(SOURCES ${SOURCES} ${SOURCES_STORAGE})
+get_source_files(SOURCES_STORAGE Fluid/Storage)
+set(SOURCES ${SOURCES} ${SOURCES_STORAGE})
 
-GET_SOURCE_FILES(SOURCES_VISICOSITY Fluid/Viscosity)
-GET_SOURCE_FILES(SOURCES ${SOURCES} ${SOURCES_VISICOSITY})
+get_source_files(SOURCES_VISICOSITY Fluid/Viscosity)
+set(SOURCES ${SOURCES} ${SOURCES_VISICOSITY})
 
-GET_SOURCE_FILES(SOURCES_SOLID_DENSITY Solid/Density)
-GET_SOURCE_FILES(SOURCES ${SOURCES} ${SOURCES_SOLID_DENSITY})
+get_source_files(SOURCES_SOLID_DENSITY Solid/Density)
+set(SOURCES ${SOURCES} ${SOURCES_SOLID_DENSITY})
 
-include_directories (
-	.
-#	../BaseLib
-)
-
-# Create the library
-add_library( MaterialLib STATIC ${SOURCES} )
-
-set_target_properties(MaterialLib PROPERTIES LINKER_LANGUAGE CXX)
-
-target_link_libraries(MaterialLib 
-#	BaseLib
+add_library(MaterialLib ${SOURCES} )
+target_link_libraries(MaterialLib
+    BaseLib
 )
