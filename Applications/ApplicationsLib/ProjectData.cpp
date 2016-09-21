@@ -36,7 +36,7 @@
 #include "ProcessLib/SmallDeformation/CreateSmallDeformationProcess.h"
 #include "ProcessLib/TES/CreateTESProcess.h"
 #include "ProcessLib/HeatConduction/CreateHeatConductionProcess.h"
-
+#include "ProcessLib/LiquidFlow/createLiquidFlowProcess.h"
 namespace detail
 {
 static void readGeometry(std::string const& fname,
@@ -286,6 +286,12 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config,
                 *_mesh_vec[0], std::move(jacobian_assembler),
                 _process_variables, _parameters, integration_order,
                 process_config, project_directory, output_directory);
+        }
+        else if (type == "LIQUID_FLOW")
+        {
+            process = ProcessLib::LiquidFlow::createLiquidFlowProcess(
+                *_mesh_vec[0], std::move(jacobian_assembler),
+                _process_variables, _parameters, process_config);
         }
         else if (type == "TES")
         {
