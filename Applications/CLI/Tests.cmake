@@ -520,6 +520,18 @@ if(NOT OGS_USE_MPI)
     #     EXECUTABLE_ARGS tes-inert-wedge.prj
     # )
 
+    AddTest(
+        NAME LiquidFlowProcess_sat1D
+        PATH Parabolic/LiquidFlow/sat1D
+        EXECUTABLE ogs
+        EXECUTABLE_ARGS sat1D.prj
+        WRAPPER time
+        TESTER vtkdiff
+        ABSTOL 1e-15 RELTOL 1e-15
+        DIFF_DATA
+        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution
+    )
+
 else()
     # MPI groundwater flow tests
     AddTest(
@@ -727,5 +739,17 @@ else()
         tes_zeolite_discharge_large_ts_28_t_1_000000.vtu tes_zeolite_discharge_large_pcs_0_ts_28_t_1_000000_0.vtu temperature temperature
         tes_zeolite_discharge_large_ts_28_t_1_000000.vtu tes_zeolite_discharge_large_pcs_0_ts_28_t_1_000000_0.vtu v_mass_frac v_mass_frac
 #        tes_zeolite_discharge_large_ts_28_t_1_0.vtu solid_density solid_density
+    )
+
+    AddTest(
+        NAME LiquidFlowProcess_sat1D
+        PATH Parabolic/LiquidFlow/sat1D
+        EXECUTABLE_ARGS sat1D.prj
+        WRAPPER mpirun
+        WRAPPER_ARGS -np 1
+        TESTER vtkdiff
+        ABSTOL 1e-15 RELTOL 1e-15
+        DIFF_DATA
+        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution
     )
 endif()
