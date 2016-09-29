@@ -520,6 +520,7 @@ if(NOT OGS_USE_MPI)
     #     EXECUTABLE_ARGS tes-inert-wedge.prj
     # )
 
+    # Liquid flow
     AddTest(
         NAME LiquidFlowProcess_sat1D
         PATH Parabolic/LiquidFlow/sat1D
@@ -527,9 +528,31 @@ if(NOT OGS_USE_MPI)
         EXECUTABLE_ARGS sat1D.prj
         WRAPPER time
         TESTER vtkdiff
-        ABSTOL 1e-15 RELTOL 1e-15
+        ABSTOL 1e-8 RELTOL 1e-8
         DIFF_DATA
-        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution
+        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution pressure
+    )
+    AddTest(
+        NAME LiquidFlowProcess_sat2DLFlow
+        PATH Parabolic/LiquidFlow/sat2DLFlow
+        EXECUTABLE ogs
+        EXECUTABLE_ARGS sat2DLFlow.prj
+        WRAPPER time
+        TESTER vtkdiff
+        ABSTOL 1e-8 RELTOL 1e-8
+        DIFF_DATA
+        mesh2D.vtu sat_2D_lflow_pcs_0_ts_1_t_1.000000.vtu OGS5_Results pressure
+    )
+    AddTest(
+        NAME LiquidFlowProcess_LiquidFlowProcessGravityDriven
+        PATH Parabolic/LiquidFlow/GravityDriven
+        EXECUTABLE ogs
+        EXECUTABLE_ARGS gravity_driven.prj
+        WRAPPER time
+        TESTER vtkdiff
+        ABSTOL 1e-8 RELTOL 1e-8
+        DIFF_DATA
+        mesh2D.vtu gravity_driven_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution pressure
     )
 
 else()
@@ -741,6 +764,7 @@ else()
 #        tes_zeolite_discharge_large_ts_28_t_1_0.vtu solid_density solid_density
     )
 
+    # Liquid flow
     AddTest(
         NAME LiquidFlowProcess_sat1D
         PATH Parabolic/LiquidFlow/sat1D
@@ -748,8 +772,31 @@ else()
         WRAPPER mpirun
         WRAPPER_ARGS -np 1
         TESTER vtkdiff
-        ABSTOL 1e-15 RELTOL 1e-15
+        ABSTOL 1e-8 RELTOL 1e-8
         DIFF_DATA
-        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution
+        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution pressure
     )
+    AddTest(
+        NAME LiquidFlowProcessGravityDriven
+        PATH Parabolic/LiquidFlow/GravityDriven
+        EXECUTABLE_ARGS gravity_driven.prj
+        WRAPPER mpirun
+        WRAPPER_ARGS -np 1
+        TESTER vtkdiff
+        ABSTOL 1e-8 RELTOL 1e-8
+        DIFF_DATA
+        mesh2D.vtu gravity_driven_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution pressure
+    )
+    AddTest(
+        NAME LiquidFlowProcess_sat2DLFlow
+        PATH Parabolic/LiquidFlow/sat2DLFlow
+        EXECUTABLE_ARGS sat2DLFlow.prj
+        WRAPPER mpirun
+        WRAPPER_ARGS -np 1
+        TESTER vtkdiff
+        ABSTOL 1e-8 RELTOL 1e-8
+        DIFF_DATA
+        mesh2D.vtu sat_2D_lflow_pcs_0_ts_1_t_1.000000.vtu OGS5_Results pressure
+    )
+
 endif()
