@@ -14,9 +14,11 @@
 #include <cmath>
 #include <limits>
 #include <utility>
+#include <algorithm>
+
+#include "PiecewiseLinearInterpolation.h"
 
 #include "BaseLib/quicksort.h"
-#include "PiecewiseLinearInterpolation.h"
 
 namespace MathLib
 {
@@ -35,9 +37,27 @@ PiecewiseLinearInterpolation::PiecewiseLinearInterpolation(
     }
 }
 
-double PiecewiseLinearInterpolation::getValue(double pnt_to_interpolate) const
+double PiecewiseLinearInterpolation::interpolate(
+    std::vector<double> const& supp_pnts,
+    std::vector<double> const& values_at_supp_pnts,
+    std::size_t const interval_idx,
+    double const pnt_to_interpolate) const
 {
-    // search interval that has the point inside
+    assert(std::fabs(supp_pnts[interval_idx + 1] - supp_pnts[interval_idx]) >
+           std::numeric_limits<double>::epsilon());
+
+    // compute linear interpolation polynom: y = m * (x - support[i]) + value[i]
+    const double m((values_at_supp_pnts[interval_idx + 1] -
+                    values_at_supp_pnts[interval_idx]) /
+                   (supp_pnts[interval_idx + 1] - supp_pnts[interval_idx]));
+
+    return m * (pnt_to_interpolate - supp_pnts[interval_idx]) +
+           values_at_supp_pnts[interval_idx];
+}
+
+double PiecewiseLinearInterpolation::getValue(
+    double const pnt_to_interpolate) const
+{
     if (pnt_to_interpolate <= _supp_pnts.front())
     {
         return _values_at_supp_pnts[0];
@@ -48,17 +68,59 @@ double PiecewiseLinearInterpolation::getValue(double pnt_to_interpolate) const
         return _values_at_supp_pnts[_supp_pnts.size() - 1];
     }
 
+    // search interval that has the point inside
     auto const& it(std::lower_bound(_supp_pnts.begin(), _supp_pnts.end(),
                                     pnt_to_interpolate));
     std::size_t const interval_idx = std::distance(_supp_pnts.begin(), it) - 1;
 
-    // compute linear interpolation polynom: y = m * (x - support[i]) + value[i]
-    const double m((_values_at_supp_pnts[interval_idx + 1] -
-                    _values_at_supp_pnts[interval_idx]) /
-                   (_supp_pnts[interval_idx + 1] - _supp_pnts[interval_idx]));
+    return interpolate(_supp_pnts, _values_at_supp_pnts, interval_idx,
+                       pnt_to_interpolate);
+}
 
-    return m * (pnt_to_interpolate - _supp_pnts[interval_idx]) +
-           _values_at_supp_pnts[interval_idx];
+double PiecewiseLinearInterpolation::getInverseValue(double const value) const
+{
+    std::size_t interval_idx = 0;
+    if (_values_at_supp_pnts.front() < _values_at_supp_pnts.back())
+    {
+        if (value <= _values_at_supp_pnts.front())
+        {
+            return _supp_pnts[0];
+        }
+        else if (value >= _values_at_supp_pnts.back())
+        {
+            return _supp_pnts[_supp_pnts.size() - 1];
+        }
+        else
+        {
+            // search interval that has the point inside
+            auto const& it(std::lower_bound(_values_at_supp_pnts.begin(),
+                                            _values_at_supp_pnts.end(), value));
+            interval_idx = std::distance(_values_at_supp_pnts.begin(), it) - 1;
+        }
+    }
+    else
+    {
+        if (value >= _values_at_supp_pnts.front())
+        {
+            return _supp_pnts[0];
+        }
+        else if (value <= _values_at_supp_pnts.back())
+        {
+            return _supp_pnts[_supp_pnts.size() - 1];
+        }
+        else
+        {
+            // search interval in the reverse direction for the point inside
+            auto const& it(std::lower_bound(_values_at_supp_pnts.rbegin(),
+                                            _values_at_supp_pnts.rend(),
+                                            value));
+            interval_idx = _values_at_supp_pnts.size() -
+                           (std::distance(_values_at_supp_pnts.rbegin(), it)) -
+                           1;
+        }
+    }
+
+    return interpolate(_values_at_supp_pnts, _supp_pnts, interval_idx, value);
 }
 
 double PiecewiseLinearInterpolation::getDerivative(
@@ -112,4 +174,20 @@ double PiecewiseLinearInterpolation::getSupportMin() const
     assert(!_supp_pnts.empty());
     return _supp_pnts.front();
 }
+
+bool PiecewiseLinearInterpolation::isMonotonic() const
+{
+    const double tangent0 = getDerivative(_supp_pnts[0]);
+
+    if (std::fabs(tangent0) < std::numeric_limits<double>::min())
+        return false;
+    else
+    {
+        return std::none_of(_supp_pnts.begin(), _supp_pnts.end(),
+                            [&](const double p) {
+                                return this->getDerivative(p) * tangent0 <= 0.;
+                            });
+    }
+}
+
 }  // end MathLib
