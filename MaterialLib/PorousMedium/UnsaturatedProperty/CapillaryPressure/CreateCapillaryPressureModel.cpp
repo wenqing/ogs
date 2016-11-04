@@ -107,11 +107,44 @@ std::unique_ptr<CapillaryPressureSaturation> createCapillaryPressureModel(
     {
         return createVanGenuchten(config);
     }
+    else if (type == "Curve")
+    {
+        std::vector<double> variables, values;
+        //! \ogs_file_param{material_property__porous_medium__porous_medium__capillary_pressure__type__curve}
+        auto const& curve_config = config.getConfigSubtree("curve");
+        //! \ogs_file_param{material_property__porous_medium__porous_medium__capillary_pressure__type__curve__data}
+        for (auto const& data_string :
+             curve_config.getConfigParameterList<std::string>("data"))
+        {
+            std::stringstream ss(data_string);
+            double var, val;
+            ss >> var >> val;
+            ss.clear();
+            variables.push_back(var);
+            values.push_back(val);
+        }
+        auto curve = std::unique_ptr<MathLib::PiecewiseLinearInterpolation>(
+            new MathLib::PiecewiseLinearInterpolation(
+                std::move(variables), std::move(values), true));
+
+        if (curve->isMonotonic())
+        {
+            return std::unique_ptr<CapillaryPressureSaturation>(
+                new CapillaryPressureSaturationCurve(curve));
+        }
+        else
+        {
+            OGS_FATAL(
+                "The capillary pressure saturation curve %s is not "
+                "monotonic.\n");
+        }
+    }
     else
     {
         OGS_FATAL(
-            "The capillary pressure models %s are unavailable.\n"
-            "The available types are: \n\tBrookCorey, \n\tvanGenuchten.\n",
+            "The capillary pressure saturation models %s are unavailable.\n"
+            "The available types are: \n\tBrookCorey, \n\tvanGenuchten,",
+            "\n\tCurve.\n",
             type.data());
     }
 }
