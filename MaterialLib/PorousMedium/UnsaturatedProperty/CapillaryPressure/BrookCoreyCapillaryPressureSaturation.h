@@ -65,7 +65,7 @@ public:
     /// Get capillary pressure.
     double getCapillaryPressure(const double saturation) const override;
 
-    /// Get capillary pressure.
+    /// Get saturation.
     double getSaturation(const double capillary_pressure) const override;
 
     /// Get the derivative of the capillary pressure with respect to saturation

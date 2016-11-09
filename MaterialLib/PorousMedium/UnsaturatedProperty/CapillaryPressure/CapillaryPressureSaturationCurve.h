@@ -52,7 +52,7 @@ public:
         return _curve_data->getValue(S);
     }
 
-    /// Get capillary pressure.
+    /// Get saturation.
     double getSaturation(const double capillary_pressure) const override
     {
         const double pc = MathLib::limitValueInInterval(capillary_pressure,
