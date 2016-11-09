@@ -55,8 +55,10 @@ void LiquidFlowProcess::initializeConcreteProcess(
     MeshLib::Mesh const& mesh,
     unsigned const integration_order)
 {
+    ProcessLib::ProcessVariable const& pv = getProcessVariables()[0];
     ProcessLib::createLocalAssemblers<LiquidFlowLocalAssembler>(
-        mesh.getDimension(), mesh.getElements(), dof_table, _local_assemblers,
+        mesh.getDimension(), mesh.getElements(), dof_table,
+        pv.getShapeFunctionOrder(), _local_assemblers,
         mesh.isAxiallySymmetric(), integration_order, _gravitational_axis_id,
         _gravitational_acceleration, _material_properties);
 
@@ -109,6 +111,15 @@ void LiquidFlowProcess::assembleWithJacobianConcreteProcess(
         _global_assembler, &VectorMatrixAssembler::assembleWithJacobian,
         _local_assemblers, *_local_to_global_index_map, t, x, xdot, dxdot_dx,
         dx_dx, M, K, b, Jac);
+}
+
+void LiquidFlowProcess::computeSecondaryVariableConcrete(const double t,
+                                                         GlobalVector const& x)
+{
+    DBUG("Compute the velocity for LiquidFlowProcess.");
+    GlobalExecutor::executeMemberOnDereferenced(
+        &LiquidFlowLocalAssemblerInterface::computeSecondaryVariable,
+        _local_assemblers, *_local_to_global_index_map, t, x);
 }
 
 }  // end of namespace

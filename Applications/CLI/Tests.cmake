@@ -574,6 +574,20 @@ if(NOT OGS_USE_MPI)
         single_joint_inside_expected_pcs_0_ts_1_t_1.000000.vtu single_joint_inside_pcs_0_ts_1_t_1.000000.vtu displacement_jump1 displacement_jump1
     )
 
+    AddTest(
+        NAME LIE_M_two_joints
+        PATH LIE/Mechanics
+        EXECUTABLE ogs
+        EXECUTABLE_ARGS two_joints.prj
+        WRAPPER time
+        TESTER vtkdiff
+        ABSTOL 1e-16 RELTOL 1e-16
+        DIFF_DATA
+        two_joints_expected_pcs_0_ts_1_t_1.000000.vtu two_joints_pcs_0_ts_1_t_1.000000.vtu displacement displacement
+        two_joints_expected_pcs_0_ts_1_t_1.000000.vtu two_joints_pcs_0_ts_1_t_1.000000.vtu displacement_jump1 displacement_jump1
+        two_joints_expected_pcs_0_ts_1_t_1.000000.vtu two_joints_pcs_0_ts_1_t_1.000000.vtu displacement_jump2 displacement_jump2
+    )
+
     # Liquid flow
     AddTest(
         NAME LiquidFlow_LineDirichletNeumannBC
@@ -584,7 +598,8 @@ if(NOT OGS_USE_MPI)
         TESTER vtkdiff
         ABSTOL 1e-8 RELTOL 1e-8
         DIFF_DATA
-        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution pressure
+        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticPressure pressure
+        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticVec v_x
     )
     AddTest(
         NAME LiquidFlow_PressureBCatCornerOfAnisotropicSquare
@@ -606,7 +621,9 @@ if(NOT OGS_USE_MPI)
         TESTER vtkdiff
         ABSTOL 1e-8 RELTOL 1e-8
         DIFF_DATA
-        mesh2D.vtu gravity_driven_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution pressure
+        mesh2D.vtu gravity_driven_pcs_0_ts_1_t_1.000000.vtu AnalyticPressure pressure
+        mesh2D.vtu gravity_driven_pcs_0_ts_1_t_1.000000.vtu AnalyticVx v_x
+        mesh2D.vtu gravity_driven_pcs_0_ts_1_t_1.000000.vtu AnalyticVy v_y
     )
     AddTest(
         NAME LiquidFlow_AxisymTheis
@@ -618,6 +635,30 @@ if(NOT OGS_USE_MPI)
         ABSTOL 1e-8 RELTOL 1e-8
         DIFF_DATA
         axisym_theis.vtu liquid_pcs_pcs_0_ts_30_t_1728.000000.vtu OGS5_pressure pressure
+    )
+
+    AddTest(
+        NAME LARGE_LiquidFlow_Anisotropic_GravityDriven3D
+        PATH Parabolic/LiquidFlow/GravityDriven3D
+        EXECUTABLE ogs
+        EXECUTABLE_ARGS anisotropic_gravity_driven3D.prj
+        WRAPPER time
+        TESTER vtkdiff
+        ABSTOL 1e-6 RELTOL 1e-6
+        DIFF_DATA
+        hex.vtu anisotropic_gravity_driven3D_pcs_0_ts_1_t_1.000000.vtu analytic_pressure pressure
+    )
+
+    AddTest(
+        NAME LARGE_LiquidFlow_Isotropic_GravityDriven3D
+        PATH Parabolic/LiquidFlow/GravityDriven3D
+        EXECUTABLE ogs
+        EXECUTABLE_ARGS isotropic_gravity_driven3D.prj
+        WRAPPER time
+        TESTER vtkdiff
+        ABSTOL 1e-6 RELTOL 1e-6
+        DIFF_DATA
+        hex.vtu isotropic_gravity_driven3D_pcs_0_ts_1_t_1.000000.vtu analytic_pressure pressure
     )
 
 else()
@@ -839,7 +880,8 @@ else()
         TESTER vtkdiff
         ABSTOL 1e-8 RELTOL 1e-8
         DIFF_DATA
-        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution pressure
+        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticPressure pressure
+        sat1D.vtu sat_1D_pcs_0_ts_1_t_1.000000.vtu AnalyticVec v_x
     )
     AddTest(
         NAME LiquidFlow_GravityDriven
@@ -850,7 +892,9 @@ else()
         TESTER vtkdiff
         ABSTOL 1e-8 RELTOL 1e-8
         DIFF_DATA
-        mesh2D.vtu gravity_driven_pcs_0_ts_1_t_1.000000.vtu AnalyticSolution pressure
+        mesh2D.vtu gravity_driven_pcs_0_ts_1_t_1.000000.vtu AnalyticPressure pressure
+        mesh2D.vtu gravity_driven_pcs_0_ts_1_t_1.000000.vtu AnalyticVx v_x
+        mesh2D.vtu gravity_driven_pcs_0_ts_1_t_1.000000.vtu AnalyticVy v_y
     )
     AddTest(
         NAME LiquidFlow_PressureBCatCornerOfAnisotropicSquare
@@ -873,6 +917,31 @@ else()
         ABSTOL 1e-8 RELTOL 1e-8
         DIFF_DATA
         axisym_theis.vtu liquid_pcs_pcs_0_ts_30_t_1728.000000.vtu OGS5_pressure pressure
+    )
+    AddTest(
+        NAME LARGE_LiquidFlow_Anisotropic_GravityDriven3D
+        PATH Parabolic/LiquidFlow/GravityDriven3D
+        EXECUTABLE_ARGS anisotropic_gravity_driven3D.prj
+        WRAPPER mpirun
+        WRAPPER_ARGS -np 1
+        WRAPPER time
+        TESTER vtkdiff
+        ABSTOL 1e-6 RELTOL 1e-6
+        DIFF_DATA
+        hex.vtu anisotropic_gravity_driven3D_pcs_0_ts_1_t_1.000000.vtu analytic_pressure pressure
+    )
+
+    AddTest(
+        NAME LARGE_LiquidFlow_Isotropic_GravityDriven3D
+        PATH Parabolic/LiquidFlow/GravityDriven3D
+        EXECUTABLE_ARGS isotropic_gravity_driven3D.prj
+        WRAPPER mpirun
+        WRAPPER_ARGS -np 1
+        WRAPPER time
+        TESTER vtkdiff
+        ABSTOL 1e-6 RELTOL 1e-6
+        DIFF_DATA
+        hex.vtu isotropic_gravity_driven3D_pcs_0_ts_1_t_1.000000.vtu analytic_pressure pressure
     )
 
 endif()

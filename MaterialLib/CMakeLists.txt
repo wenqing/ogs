@@ -7,10 +7,13 @@ append_source_files(SOURCES FractureModels)
 append_source_files(SOURCES Fluid)
 append_source_files(SOURCES Fluid/Density)
 append_source_files(SOURCES Fluid/Viscosity)
+append_source_files(SOURCES Fluid/SpecificHeatCapacity)
+append_source_files(SOURCES Fluid/ThermalConductivity)
 
 append_source_files(SOURCES PorousMedium/Porosity)
 append_source_files(SOURCES PorousMedium/Storage)
 append_source_files(SOURCES PorousMedium/Permeability)
+append_source_files(SOURCES PorousMedium/UnsaturatedProperty/CapillaryPressure)
 
 add_library(MaterialLib ${SOURCES} )
 target_link_libraries(MaterialLib

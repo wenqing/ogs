@@ -81,11 +81,23 @@ option(OGS_USE_MPI "Use MPI" OFF)
 
 # Eigen
 option(OGS_USE_EIGEN "Use Eigen linear solver" ON)
+option(OGS_USE_EIGEN_UNSUPPORTED "Use Eigen unsupported modules" ON)
 option(OGS_EIGEN_DYNAMIC_SHAPE_MATRICES "Use dynamically allocated shape matrices" ON)
 option(EIGEN_NO_DEBUG "Disables Eigen's assertions" OFF)
 
+# MKL
+option(OGS_USE_MKL "Use Intel MKL" OFF)
+
 # Logging
-option(OGS_DISABLE_LOGGING "Disables all logog messages." OFF)
+set(OGS_LOG_LEVEL "LOGOG_LEVEL_DEBUG" CACHE STRING "Set logging level included in compilation.")
+set_property(CACHE OGS_LOG_LEVEL PROPERTY STRINGS
+    LOGOG_LEVEL_NONE
+    LOGOG_LEVEL_ERROR
+    LOGOG_LEVEL_WARN
+    LOGOG_LEVEL_INFO
+    LOGOG_LEVEL_DEBUG
+    LOGOG_LEVEL_ALL
+)
 
 # Debug
 option(OGS_FATAL_ABORT "Abort in OGS_FATAL" OFF)
@@ -135,6 +147,11 @@ if(OGS_USE_LIS)
     set(OGS_USE_EIGEN ON)
 endif()
 
+if(OGS_USE_MKL)
+    add_definitions(-DUSE_MKL)
+    include_directories(SYSTEM ${MKL_INCLUDE_DIR})
+endif()
+
 if(OGS_USE_PETSC)
     add_definitions(-DUSE_PETSC)
     set(OGS_USE_MPI ON CACHE BOOL "Use MPI" FORCE)
@@ -155,6 +172,9 @@ endif()
 
 if(OGS_USE_EIGEN)
     add_definitions(-DOGS_USE_EIGEN)
+    if(OGS_USE_EIGEN_UNSUPPORTED)
+        add_definitions(-DUSE_EIGEN_UNSUPPORTED)
+    endif()
 endif()
 
 if (OGS_FATAL_ABORT)
@@ -165,6 +185,10 @@ if(OGS_BUILD_TESTS)
     set(Data_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Tests/Data CACHE INTERNAL "")
     set(Data_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Tests/Data CACHE INTERNAL "")
 endif()
+
+# Logging level
+add_definitions(-DLOGOG_LEVEL=${OGS_LOG_LEVEL})
+
 
 ######################
 ### Subdirectories ###

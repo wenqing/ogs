@@ -44,8 +44,10 @@ void GroundwaterFlowProcess::initializeConcreteProcess(
     MeshLib::Mesh const& mesh,
     unsigned const integration_order)
 {
+    ProcessLib::ProcessVariable const& pv = getProcessVariables()[0];
     ProcessLib::createLocalAssemblers<LocalAssemblerData>(
-        mesh.getDimension(), mesh.getElements(), dof_table, _local_assemblers,
+        mesh.getDimension(), mesh.getElements(), dof_table,
+        pv.getShapeFunctionOrder(), _local_assemblers,
         mesh.isAxiallySymmetric(), integration_order, _process_data);
 
     _secondary_variables.addSecondaryVariable(
@@ -96,6 +98,16 @@ void GroundwaterFlowProcess::assembleWithJacobianConcreteProcess(
         _global_assembler, &VectorMatrixAssembler::assembleWithJacobian,
         _local_assemblers, *_local_to_global_index_map, t, x, xdot, dxdot_dx,
         dx_dx, M, K, b, Jac);
+}
+
+
+void GroundwaterFlowProcess::computeSecondaryVariableConcrete(const double t,
+                                                         GlobalVector const& x)
+{
+    DBUG("Compute the velocity for GroundwaterFlowProcess.");
+    GlobalExecutor::executeMemberOnDereferenced(
+            &GroundwaterFlowLocalAssemblerInterface::computeSecondaryVariable,
+            _local_assemblers, *_local_to_global_index_map, t, x);
 }
 
 }   // namespace GroundwaterFlow

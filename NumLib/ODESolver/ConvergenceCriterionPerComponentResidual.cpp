@@ -35,6 +35,30 @@ ConvergenceCriterionPerComponentResidual::
         OGS_FATAL("The given tolerances vector is empty.");
 }
 
+
+void ConvergenceCriterionPerComponentResidual::checkDeltaX(
+    const GlobalVector& minus_delta_x, GlobalVector const& x)
+{
+    if ((!_dof_table) || (!_mesh))
+        OGS_FATAL("D.o.f. table or mesh have not been set.");
+
+    for (unsigned global_component = 0; global_component < _abstols.size();
+         ++global_component)
+    {
+        // TODO short cut if tol <= 0.0
+        auto error_dx = norm(minus_delta_x, global_component, _norm_type,
+                             *_dof_table, *_mesh);
+        auto norm_x =
+            norm(x, global_component, _norm_type, *_dof_table, *_mesh);
+
+        INFO(
+            "Convergence criterion, component %u: |dx|=%.4e, |x|=%.4e, "
+            "|dx|/|x|=%.4e",
+            error_dx, global_component, norm_x, error_dx / norm_x);
+    }
+}
+
+
 void ConvergenceCriterionPerComponentResidual::checkResidual(
     const GlobalVector& residual)
 {
@@ -54,14 +78,14 @@ void ConvergenceCriterionPerComponentResidual::checkResidual(
                              *_dof_table, *_mesh);
 
         if (_is_first_iteration) {
-            INFO("Convergence criterion: |r0|=%.4e", norm_res);
+            INFO("Convergence criterion, component %u: |r0|=%.4e", global_component, norm_res);
             _residual_norms_0[global_component] = norm_res;
         } else {
             auto const norm_res0 = _residual_norms_0[global_component];
             INFO(
                 "Convergence criterion, component %u: |r|=%.4e, |r0|=%.4e, "
                 "|r|/|r0|=%.4e",
-                norm_res, global_component, norm_res0, norm_res / norm_res0);
+                global_component, norm_res, norm_res0, norm_res / norm_res0);
         }
 
         satisfied_abs = satisfied_abs && norm_res < _abstols[global_component];
