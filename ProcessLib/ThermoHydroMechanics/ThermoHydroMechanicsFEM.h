@@ -85,7 +85,7 @@ struct IntegrationPointData final
 
     void pushBackState()
     {
-        eps_m_prev = eps_m ;
+        //eps_m_prev = eps_m ;
         eps_prev = eps;
         sigma_eff_prev = sigma_eff;
         material_state_variables->pushBackState();
@@ -105,9 +105,9 @@ struct IntegrationPointData final
                                     double & delta_T)
     {
         eps.noalias() = b_matrices * u;
-        eps_m.noalias() = eps - alpha * delta_T * Invariants::identity2;
+        //eps_m.noalias() = eps - alpha * delta_T * Invariants::identity2;
         solid_material.computeConstitutiveRelation(
-            t, x_position, dt, eps_m_prev, eps_m, sigma_eff_prev, sigma_eff, C,
+            t, x_position, dt, eps_prev, eps, sigma_eff_prev, sigma_eff, C,
             *material_state_variables);
     }
 
