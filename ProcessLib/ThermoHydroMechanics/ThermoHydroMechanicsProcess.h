@@ -105,6 +105,18 @@ void constructDofTable() override
             _local_assemblers, mesh.isAxiallySymmetric(), integration_order,
             _process_data);
 
+         // TODO move the two data members somewhere else.
+         // for extrapolation of secondary variables
+            std::vector<std::unique_ptr<MeshLib::MeshSubsets>>
+                all_mesh_subsets_single_component;
+            all_mesh_subsets_single_component.emplace_back(
+                new MeshLib::MeshSubsets(_mesh_subset_all_nodes.get()));
+            _local_to_global_index_map_single_component.reset(
+                new NumLib::LocalToGlobalIndexMap(
+            std::move(all_mesh_subsets_single_component),
+            // by location order is needed for output
+            NumLib::ComponentOrder::BY_LOCATION));
+
         Base::_secondary_variables.addSecondaryVariable(
             "sigma_xx", 1,
             makeExtrapolator(
@@ -167,6 +179,24 @@ void constructDofTable() override
                 getExtrapolator(), _local_assemblers,
                 &ThermoHydroMechanicsLocalAssemblerInterface::getIntPtEpsilonXY));
 
+        Base::_secondary_variables.addSecondaryVariable(
+            "velocity_x", 1,
+            makeExtrapolator(
+                getExtrapolator(), _local_assemblers,
+                &ThermoHydroMechanicsLocalAssemblerInterface::getIntPtDarcyVelocityX));
+
+        Base::_secondary_variables.addSecondaryVariable(
+                "velocity_y", 1,
+                     makeExtrapolator(
+                         getExtrapolator(), _local_assemblers,
+                         &ThermoHydroMechanicsLocalAssemblerInterface::getIntPtDarcyVelocityY));
+
+                 Base::_secondary_variables.addSecondaryVariable(
+                     "velocity_z", 1,
+                     makeExtrapolator(
+                         getExtrapolator(), _local_assemblers,
+                         &ThermoHydroMechanicsLocalAssemblerInterface::getIntPtDarcyVelocityZ));
+
 
     }
 
@@ -228,6 +258,8 @@ private:
     ThermoHydroMechanicsProcessData<DisplacementDim> _process_data;
 
     std::vector<std::unique_ptr<ThermoHydroMechanicsLocalAssemblerInterface>> _local_assemblers;
+    std::unique_ptr<NumLib::LocalToGlobalIndexMap>
+         _local_to_global_index_map_single_component;
 
 };
 

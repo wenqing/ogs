@@ -160,6 +160,17 @@ public:
 
     virtual std::vector<double> const& getIntPtEpsilonYZ(
         std::vector<double>& cache) const = 0;
+
+    virtual std::vector<double> const& getIntPtDarcyVelocityX(
+           std::vector<double>& cache) const = 0;
+
+    virtual std::vector<double> const& getIntPtDarcyVelocityY(
+           std::vector<double>& cache) const = 0;
+
+    virtual std::vector<double> const& getIntPtDarcyVelocityZ(
+           std::vector<double>& cache) const = 0;
+
+
 };
 
 
@@ -584,6 +595,43 @@ public:
 
     }
 
+    void postTimestepConcrete(std::vector<double> const& local_x) override
+         {
+             double const& t = _process_data.t;
+
+             auto p =
+                 Eigen::Map<typename ShapeMatricesTypePressure::template VectorType<
+                     pressure_size> const>(local_x.data() + pressure_index,
+                                           pressure_size);
+             using GlobalDimVectorType =
+                 typename ShapeMatricesTypePressure::GlobalDimVectorType;
+
+             unsigned const n_integration_points =
+                 _integration_method.getNumberOfPoints();
+
+             SpatialPosition x_position;
+             x_position.setElementID(_element.getID());
+             for (unsigned ip = 0; ip < n_integration_points; ip++)
+             {
+                 x_position.setIntegrationPoint(ip);
+                 double const K_over_mu =
+                     _process_data.intrinsic_permeability(t, x_position)[0] /
+                     _process_data.fluid_viscosity(t, x_position)[0];
+
+                 auto const rho_fr = _process_data.fluid_density(t, x_position)[0];
+                 auto const& b = _process_data.specific_body_force;
+
+                 // Compute the velocity
+                 auto const& dNdx_p = _ip_data[ip].dNdx_p;
+                 GlobalDimVectorType const darcy_velocity = -K_over_mu * dNdx_p * p
+                 -K_over_mu* rho_fr* b;
+                 for (unsigned d = 0; d < DisplacementDim; ++d)
+                 {
+                     _darcy_velocities[d][ip] = darcy_velocity[d];
+                 }
+             }
+         }
+
     void preTimestepConcrete(std::vector<double> const& /*local_x*/,
                              double const /*t*/,
                              double const /*delta_t*/) override
@@ -681,6 +729,28 @@ public:
         assert(DisplacementDim == 3);
         return getIntPtEpsilon(cache, 5);
     }
+
+    std::vector<double> const& getIntPtDarcyVelocityX(
+             std::vector<double>& /*cache*/) const override
+    {
+         assert(_darcy_velocities.size() > 0);
+         return _darcy_velocities[0];
+    }
+
+    std::vector<double> const& getIntPtDarcyVelocityY(
+            std::vector<double>& /*cache*/) const override
+    {
+         assert(_darcy_velocities.size() > 1);
+         return _darcy_velocities[1];
+    }
+
+    std::vector<double> const& getIntPtDarcyVelocityZ(
+    std::vector<double>& /*cache*/) const override
+    {
+         assert(_darcy_velocities.size() > 2);
+         return _darcy_velocities[2];
+    }
+
 private:
     std::vector<double> const& getIntPtSigma(std::vector<double>& cache,
                                              std::size_t const component) const
@@ -724,6 +794,10 @@ private:
     IntegrationMethod _integration_method;
     MeshLib::Element const& _element;
     SecondaryData<typename ShapeMatrices::ShapeType> _secondary_data;
+    std::vector<std::vector<double>> _darcy_velocities =
+        std::vector<std::vector<double>>(
+                  DisplacementDim,
+        std::vector<double>(_integration_method.getNumberOfPoints()));
 
     static const int temperature_index = 0;
     static const int temperature_size = ShapeFunctionPressure::NPOINTS;
@@ -734,7 +808,7 @@ private:
         ShapeFunctionDisplacement::NPOINTS * DisplacementDim;
     static const int kelvin_vector_size =
         KelvinVectorDimensions<DisplacementDim>::value;
-    std::vector<std::vector<double>> _darcy_velocities;
+   // std::vector<std::vector<double>> _darcy_velocities;
 };
 
 template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure,
