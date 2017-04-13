@@ -85,7 +85,7 @@ struct IntegrationPointData final
 
     void pushBackState()
     {
-        //eps_m_prev = eps_m ;
+        eps_m_prev = eps_m ;
         eps_prev = eps;
         sigma_eff_prev = sigma_eff;
         material_state_variables->pushBackState();
@@ -101,13 +101,13 @@ struct IntegrationPointData final
                                     SpatialPosition const& x_position,
                                     double const dt,
                                     DisplacementVectorType const& u,
-                                    double const alpha,
+                                    double const beta_s,
                                     double & delta_T)
     {
         eps.noalias() = b_matrices * u;
-        //eps_m.noalias() = eps - alpha * delta_T * Invariants::identity2;
+        eps_m.noalias() = eps - beta_s/3 * delta_T * Invariants::identity2;
         solid_material.computeConstitutiveRelation(
-            t, x_position, dt, eps_prev, eps, sigma_eff_prev, sigma_eff, C,
+            t, x_position, dt, eps_m_prev, eps_m, sigma_eff_prev, sigma_eff, C,
             *material_state_variables);
     }
 
@@ -415,7 +415,8 @@ public:
 
             auto const& B = _ip_data[ip].b_matrices;
             auto const& sigma_eff = _ip_data[ip].sigma_eff;
-            auto const& sigma_m = _ip_data[ip].sigma_m;
+            //auto const& eps_m = _ip_data[ip].eps_m;
+            //auto const& sigma_m = _ip_data[ip].sigma_m;
 
             auto const& C = _ip_data[ip].C;
 
@@ -439,12 +440,12 @@ public:
 
             auto T_int_pt = N_T * T ;
             double delta_T(T_int_pt - T0);
-            rho_fr = rho_fr*(1 - beta_f * delta_T);
-            rho_sr = rho_sr*(1 - beta_s * delta_T);
+            double rho_f = rho_fr*(1 - beta_f * delta_T);
+            double rho_s = rho_sr*(1 - beta_s * delta_T);
 
             auto velocity =
                  (-K_over_mu * dNdx_p * p).eval();
-            velocity += K_over_mu * rho_fr * b;  // do not consider the density change here
+            velocity += K_over_mu * rho_f * b;  // do not consider the density change here
 
             // mapping matrix (m)
             auto const& identity2 = MaterialLib::SolidModels::Invariants<
@@ -453,7 +454,7 @@ public:
             //
             // displacement equation, displacement part (K_uu)
             //
-            _ip_data[ip].updateConstitutiveRelation(t, x_position, dt, u, alpha, delta_T);
+            _ip_data[ip].updateConstitutiveRelation(t, x_position, dt, u, beta_s, delta_T);
 
             local_Jac
                 .template block<displacement_size, displacement_size>(
@@ -471,15 +472,15 @@ public:
                        i, i * displacement_size / DisplacementDim)
                     .noalias() = _ip_data[ip]._N_u; */
 
-            double const rho = rho_sr * (1 - porosity) + porosity * rho_fr;
+            double const rho = rho_s * (1 - porosity) + porosity * rho_f;
             local_rhs.template segment<displacement_size>(displacement_index)
                 .noalias() -=
                 (B.transpose() * sigma_eff - N_u.transpose() * rho * b) * w;
-            local_rhs  // cancelling out the reference temperature
-                .template segment<displacement_size>(displacement_index)
-                .noalias() -=
+        //    local_rhs  // cancelling out the reference temperature
+          //      .template segment<displacement_size>(displacement_index)
+          //      .noalias() -=
             //    B.transpose()* (identity2 * beta_s/3 * T0) ;
-                 B.transpose() * C * identity2 * (beta_s/3) * T0 * w ;
+             //    B.transpose() * C * identity2 * (beta_s/3) * T0 * w ;
 
             //
             // displacement equation, temperature part (K_uT)
@@ -526,7 +527,7 @@ public:
             //
             // temperature equation, pressure part !!!!!!.positive or negative
             //
-            KTp.noalias() +=  K_over_mu * rho_fr * C_f * dNdx_p.transpose() * (dNdx_T * T) * N_T * w ;
+            KTp.noalias() +=  K_over_mu * rho_fr * C_f * dNdx_p.transpose() * (dNdx_T * T) * N_T * w * 0 ;
             KTp_coeff.noalias() +=  K_over_mu * rho_fr * C_f * N_T.transpose() * (dNdx_T * T).transpose() * dNdx_T * w ;
           //  KTp.noalias() +=  N_T.transpose() * heat_capacity * N_T * w;
 
@@ -548,7 +549,7 @@ public:
         local_Jac
             .template block<temperature_size, pressure_size>(
                 temperature_index, pressure_index)
-            .noalias() -= KTp_coeff ;
+            .noalias() -= KTp ;
         // displacement equation, temperature part
         local_Jac
             .template block<displacement_size, temperature_size>(
@@ -587,7 +588,7 @@ public:
 
         // displacement equation (f_u) ref = 0 case
         local_rhs.template segment<displacement_size>(displacement_index)
-            .noalias() += Kup * p + KuT * T  ;
+                .noalias() += Kup * p /*+ KuT * T */ ;
 
         // temperature equation (f_T)
         local_rhs.template segment<temperature_size>(temperature_index)
@@ -760,9 +761,9 @@ private:
 
         for (auto const& ip_data : _ip_data) {
             if (component < 3)  // xx, yy, zz components
-                cache.push_back(ip_data.sigma_m[component]);
+                cache.push_back(ip_data.sigma_eff[component]);
             else    // mixed xy, yz, xz components
-                cache.push_back(ip_data.sigma_m[component] / std::sqrt(2));
+                cache.push_back(ip_data.sigma_eff[component] / std::sqrt(2));
         }
 
         return cache;
