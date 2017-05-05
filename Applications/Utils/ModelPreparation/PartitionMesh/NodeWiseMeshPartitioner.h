@@ -82,6 +82,10 @@ public:
     /// \param file_name_base The prefix of the file name.
     void writeBinary(const std::string& file_name_base);
 
+    /// Write the global mesh into a VTU file
+    /// \param file_name_base The prefix of the file name.
+    void writeGlobalMeshVTU(const std::string& file_name_base);
+
 private:
     /// Number of partitions.
     IntegerType _npartitions;
@@ -283,6 +287,9 @@ private:
         std::ostream& os,
         const MeshLib::Element& elem,
         const std::vector<IntegerType>& local_node_ids);
+
+    /// Reset global indices of the nodes of the global mesh
+    void resetGlobalNodeIndices();
 };
 
 }  // namespace MeshLib

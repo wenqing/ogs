@@ -71,6 +71,10 @@ int main(int argc, char* argv[])
     TCLAP::SwitchArg ascii_flag("a", "ascii", "Enable ASCII output.", false);
     cmd.add(ascii_flag);
 
+    TCLAP::SwitchArg o_mesh_flag("o", "output_global_mesh",
+           "Output the global mesh with renumbered node indices.", false);
+    cmd.add(o_mesh_flag);
+
     cmd.parse(argc, argv);
 
     BaseLib::RunTime run_timer;
@@ -155,6 +159,12 @@ int main(int argc, char* argv[])
         {
             INFO("Write the data of partitions into binary files ...");
             mesh_partitioner.writeBinary(file_name_base);
+        }
+
+        if (o_mesh_flag.getValue())
+        {
+            INFO("Write the mesh with renumbered node indices into VTU ...");
+            mesh_partitioner.writeGlobalMeshVTU(file_name_base);
         }
     }
 

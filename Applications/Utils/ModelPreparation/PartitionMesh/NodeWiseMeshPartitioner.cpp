@@ -672,4 +672,27 @@ void NodeWiseMeshPartitioner::writeLocalElementNodeIndices(
     os << "\n";
 }
 
+void NodeWiseMeshPartitioner::resetGlobalNodeIndices()
+{
+    for (std::size_t i = 0; i < _mesh->_nodes.size(); i++)
+    {
+        _mesh->_nodes[i]->setID(_nodes_global_ids[i]);
+    }
+    // sort
+    std::sort(_mesh->_nodes.begin(), _mesh->_nodes.end(),
+              [](const MeshLib::Node* a, const MeshLib::Node* b) {
+                  return a->getID() < b->getID();
+              });
+}
+
+void NodeWiseMeshPartitioner::writeGlobalMeshVTU(
+    const std::string& file_name_base)
+{
+    resetGlobalNodeIndices();
+    MeshLib::IO::VtuInterface writer(_mesh.get());
+    const std::string npartitions_str = std::to_string(_npartitions);
+    writer.writeToFile(file_name_base + "_node_id_renumbered_partitions_" +
+                       npartitions_str + ".vtu");
+}
+
 }  // namespace MeshLib
