@@ -288,6 +288,24 @@ private:
         const MeshLib::Element& elem,
         const std::vector<IntegerType>& local_node_ids);
 
+    /// Reset the global property vector for output the mesh with renumbered
+    /// nodes.
+    template <typename T>
+    void resetPropertyVector(std::string const& name)
+    {
+        auto& original_properties = _mesh->getProperties();
+        if (!original_properties.existsPropertyVector<T>(name))
+            return;
+
+        auto pv = original_properties.getPropertyVector<T>(name);
+        std::vector<T> original_pv_values(*pv);
+
+        for (std::size_t i = 0; i < _mesh->getNumberOfNodes(); ++i)
+        {
+            (*pv)[_nodes_global_ids[i]] = original_pv_values[i];
+        }
+    }
+
     /// Reset global indices of the nodes of the global mesh
     void resetGlobalNodeIndices();
 };

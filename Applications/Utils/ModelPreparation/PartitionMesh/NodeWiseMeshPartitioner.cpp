@@ -106,7 +106,7 @@ void NodeWiseMeshPartitioner::findNonGhostNodesInPartition(
 }
 
 void NodeWiseMeshPartitioner::findElementsInPartition(
-    std::size_t const part_id, const bool is_mixed_high_order_linear_elems)
+    std::size_t const part_id, const bool /*is_mixed_high_order_linear_elems*/)
 {
     auto& partition = _partitions[part_id];
     std::vector<MeshLib::Element*> const& elements = _mesh->getElements();
@@ -688,6 +688,19 @@ void NodeWiseMeshPartitioner::resetGlobalNodeIndices()
 void NodeWiseMeshPartitioner::writeGlobalMeshVTU(
     const std::string& file_name_base)
 {
+    auto& original_properties(_mesh->getProperties());
+    auto property_names = original_properties.getPropertyVectorNames();
+    for (auto const& name : property_names)
+    {
+        resetPropertyVector<double>(name);
+        resetPropertyVector<float>(name);
+        resetPropertyVector<int>(name);
+        resetPropertyVector<long>(name);
+        resetPropertyVector<unsigned>(name);
+        resetPropertyVector<unsigned long>(name);
+        resetPropertyVector<std::size_t>(name);
+    }
+
     resetGlobalNodeIndices();
     MeshLib::IO::VtuInterface writer(_mesh.get());
     const std::string npartitions_str = std::to_string(_npartitions);
