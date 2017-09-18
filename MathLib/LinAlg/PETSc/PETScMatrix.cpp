@@ -87,7 +87,8 @@ PETScMatrix& PETScMatrix::operator=(PETScMatrix const& A)
     return *this;
 }
 
-void PETScMatrix::setRowsColumnsZero(std::vector<PetscInt> const& row_pos)
+void PETScMatrix::setRowsColumnsZero(
+    std::vector<PetscInt> const& row_pos, PETScVector&x, PETScVector&b)
 {
     // Each rank (compute core) processes only the rows that belong to the rank
     // itself.
@@ -104,9 +105,11 @@ void PETScMatrix::setRowsColumnsZero(std::vector<PetscInt> const& row_pos)
     MatSetOption(_A, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
 
     if (nrows > 0)
-        MatZeroRows(_A, nrows, &row_pos[0], one, PETSC_NULL, PETSC_NULL);
+        MatZeroRows(_A, nrows, &row_pos[0], one, x.getRawVector(),
+                    b.getRawVector());
     else
-        MatZeroRows(_A, 0, PETSC_NULL, one, PETSC_NULL, PETSC_NULL);
+        MatZeroRows(_A, 0, PETSC_NULL, one, x.getRawVector(),
+                    b.getRawVector());
 }
 
 void PETScMatrix::viewer(const std::string& file_name,

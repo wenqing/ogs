@@ -95,15 +95,20 @@ public:
     /// Set all entries to zero.
     void setZero() { MatZeroEntries(_A); }
     /*
-       \brief Set the specified rows to zero except diagonal entries, i.e.
+       \brief Set the specified rows (could be also with columns by
+              calling MatZeroRowsColumns instead of MatZeroRows) to zero
+              except diagonal entries, i.e.
               \f$A(k, j) = \begin{cases}
                 0.0, &j\not=k, j=1,2,\dots,k-1, k+1, \dots, n
                 1.0, &j = k
               \end{cases}f$, where \f$k \in \mbox{row\_pos}\f$
               This function must be called by all ranks.
        \param row_pos The row indicies of the specified rows.
+       \param x       Vector of unknowns.
+       \param b       Vector of RHS.
     */
-    void setRowsColumnsZero(std::vector<PetscInt> const& row_pos);
+    void setRowsColumnsZero(std::vector<PetscInt> const& row_pos,
+                            PETScVector&x, PETScVector&b);
 
     /*!
        \brief       Set a single entry with a value.

@@ -24,7 +24,7 @@ void applyKnownSolution(PETScMatrix& A, PETScVector& b, PETScVector& x,
 {
     A.finalizeAssembly();
 
-    A.setRowsColumnsZero(vec_knownX_id);
+    A.setRowsColumnsZero(vec_knownX_id, x, b);
     A.finalizeAssembly();
 
     x.finalizeAssembly();
