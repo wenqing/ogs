@@ -31,6 +31,7 @@ Process::Process(
       _secondary_variables(std::move(secondary_variables)),
       _named_function_caller(std::move(named_function_caller)),
       _global_assembler(std::move(jacobian_assembler)),
+      _is_monolithic_scheme(true),
       _coupling_term(nullptr),
       _integration_order(integration_order),
       _process_variables(std::move(process_variables)),
@@ -109,13 +110,18 @@ void Process::setInitialConditions(double const t, GlobalVector& x)
                         std::abs(_local_to_global_index_map->getGlobalIndex(
                             l, variable_id, component_id));
 #ifdef USE_PETSC
-                    // The global indices of the ghost entries of the global matrix
-                    // or the global vectors need to be set as negative values for
+                    // The global indices of the ghost entries of the global
+                    // matrix
+                    // or the global vectors need to be set as negative values
+                    // for
                     // equation assembly, however the global indices start from
-                    // zero. Therefore, any ghost entry with zero index is assigned
-                    // an negative value of the vector size or the matrix dimension.
+                    // zero. Therefore, any ghost entry with zero index is
+                    // assigned
+                    // an negative value of the vector size or the matrix
+                    // dimension.
                     // To assign the initial value for the ghost entries, the
-                    // negative indices of the ghost entries are restored to zero.
+                    // negative indices of the ghost entries are restored to
+                    // zero.
                     if (global_index == x.size())
                         global_index = 0;
 #endif
@@ -158,7 +164,7 @@ void Process::assembleWithJacobian(const double t, GlobalVector const& x,
     MathLib::LinAlg::setLocalAccessibleVector(xdot);
 
     assembleWithJacobianConcreteProcess(t, x, xdot, dxdot_dx, dx_dx, M, K, b,
-                                       Jac);
+                                        Jac);
 
     // TODO apply BCs to Jacobian.
     _boundary_conditions.applyNaturalBC(t, x, K, b);
@@ -184,9 +190,19 @@ void Process::constructDofTable()
 
     // Create a vector of the number of variable components
     std::vector<unsigned> vec_var_n_components;
-    for (ProcessVariable const& pv : _process_variables)
-        vec_var_n_components.push_back(pv.getNumberOfComponents());
-
+    if (_is_monolithic_scheme)
+    {
+        for (ProcessVariable const& pv : _process_variables)
+            vec_var_n_components.push_back(pv.getNumberOfComponents());
+    }
+    else  // for staggered scheme
+    {
+        // Assuming that all equations of the coupled process use the same
+        // element order. Other cases can be considered by overloading this
+        // member function in the derived class.
+        vec_var_n_components.push_back(
+            _process_variables[0].get().getNumberOfComponents());
+    }
     _local_to_global_index_map =
         std::make_unique<NumLib::LocalToGlobalIndexMap>(
             std::move(all_mesh_subsets), vec_var_n_components,
@@ -233,7 +249,8 @@ void Process::finishNamedFunctionsInitialization()
     _named_function_caller.applyPlugs();
 
     for (auto const& named_function :
-         _named_function_caller.getNamedFunctions()) {
+         _named_function_caller.getNamedFunctions())
+    {
         auto const& name = named_function.getName();
         _secondary_variables.addSecondaryVariable(
             name,
@@ -254,7 +271,7 @@ void Process::computeSparsityPattern()
 }
 
 void Process::preTimestep(GlobalVector const& x, const double t,
-                 const double delta_t)
+                          const double delta_t)
 {
     for (auto& cached_var : _cached_secondary_variables)
     {
@@ -278,10 +295,11 @@ void Process::computeSecondaryVariable(const double t, GlobalVector const& x)
     computeSecondaryVariableConcrete(t, x);
 }
 
-void Process::preIteration(const unsigned iter, const GlobalVector &x)
+void Process::preIteration(const unsigned iter, const GlobalVector& x)
 {
     // In every new iteration cached values of secondary variables are expired.
-    for (auto& cached_var : _cached_secondary_variables) {
+    for (auto& cached_var : _cached_secondary_variables)
+    {
         cached_var->updateCurrentSolution(x, *_local_to_global_index_map);
     }
 
@@ -289,7 +307,7 @@ void Process::preIteration(const unsigned iter, const GlobalVector &x)
     preIterationConcreteProcess(iter, x);
 }
 
-NumLib::IterationResult Process::postIteration(const GlobalVector &x)
+NumLib::IterationResult Process::postIteration(const GlobalVector& x)
 {
     MathLib::LinAlg::setLocalAccessibleVector(x);
     return postIterationConcreteProcess(x);

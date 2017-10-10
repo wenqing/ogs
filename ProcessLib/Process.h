@@ -86,6 +86,11 @@ public:
                               GlobalMatrix& K, GlobalVector& b,
                               GlobalMatrix& Jac) final;
 
+    void setDecouplingSchemeType(const bool is_monolithic_scheme)
+    {
+        _is_monolithic_scheme = is_monolithic_scheme;
+    }
+
     std::vector<NumLib::IndexValueVector<GlobalIndexType>> const*
     getKnownSolutions(double const t) const final
     {
@@ -201,6 +206,8 @@ protected:
     SecondaryVariableContext _secondary_variable_context;
 
     VectorMatrixAssembler _global_assembler;
+
+    mutable bool _is_monolithic_scheme;
 
     /// Pointer to StaggeredCouplingTerm, which contains the references to the
     /// coupled processes and the references to the solutions of the coupled
