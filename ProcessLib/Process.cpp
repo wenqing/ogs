@@ -170,22 +170,25 @@ void Process::constructDofTable()
     _mesh_subset_all_nodes =
         std::make_unique<MeshLib::MeshSubset>(_mesh, &_mesh.getNodes());
 
-    // Collect the mesh subsets in a vector.
+    // Vector of mesh subsets.
     std::vector<MeshLib::MeshSubsets> all_mesh_subsets;
-    for (ProcessVariable const& pv : _process_variables)
-    {
-        std::generate_n(
-            std::back_inserter(all_mesh_subsets),
-            pv.getNumberOfComponents(),
-            [&]() {
-                return MeshLib::MeshSubsets{_mesh_subset_all_nodes.get()};
-            });
-    }
 
-    // Create a vector of the number of variable components
+    // Vector of the number of variable components
     std::vector<unsigned> vec_var_n_components;
     if (_is_monolithic_scheme)
     {
+        // Collect the mesh subsets in a vector.
+        for (ProcessVariable const& pv : _process_variables)
+        {
+            std::generate_n(
+                std::back_inserter(all_mesh_subsets),
+                pv.getNumberOfComponents(),
+                [&]() {
+                    return MeshLib::MeshSubsets{_mesh_subset_all_nodes.get()};
+                });
+        }
+
+        // Create a vector of the number of variable components
         for (ProcessVariable const& pv : _process_variables)
             vec_var_n_components.push_back(pv.getNumberOfComponents());
     }
@@ -194,6 +197,16 @@ void Process::constructDofTable()
         // Assuming that all equations of the coupled process use the same
         // element order. Other cases can be considered by overloading this
         // member function in the derived class.
+
+        // Collect the mesh subsets in a vector.
+        std::generate_n(
+            std::back_inserter(all_mesh_subsets),
+            _process_variables[0].get().getNumberOfComponents(),
+            [&]() {
+                return MeshLib::MeshSubsets{_mesh_subset_all_nodes.get()};
+            });
+
+        // Create a vector of the number of variable components.
         vec_var_n_components.push_back(
             _process_variables[0].get().getNumberOfComponents());
     }
@@ -208,7 +221,8 @@ void Process::initializeExtrapolator()
     NumLib::LocalToGlobalIndexMap const* dof_table_single_component;
     bool manage_storage;
 
-    if (_local_to_global_index_map->getNumberOfComponents() == 1)
+    if (_local_to_global_index_map->getNumberOfComponents() == 1 ||
+        !_is_monolithic_scheme)
     {
         // For single-variable-single-component processes reuse the existing DOF
         // table.
