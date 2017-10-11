@@ -12,12 +12,15 @@
 #include "MaterialLib/Fluid/FluidProperties/CreateFluidProperties.h"
 #include "MaterialLib/PorousMedium/CreatePorousMediaProperties.h"
 
+#include "MathLib/LinAlg/Eigen/EigenMapTools.h"
+
 #include "ProcessLib/Parameter/ConstantParameter.h"
 #include "ProcessLib/Utils/ParseSecondaryVariables.h"
 #include "ProcessLib/Utils/ProcessUtils.h"
 
 #include "HTProcess.h"
 #include "HTProcessData.h"
+#include "HTLocalAssemblerInterface.h"
 
 namespace ProcessLib
 {
