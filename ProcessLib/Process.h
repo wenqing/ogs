@@ -31,7 +31,7 @@ class Mesh;
 
 namespace ProcessLib
 {
-struct StaggeredCouplingTerm;
+struct CoupledSolutionsForStaggeredScheme;
 
 class Process
     : public NumLib::ODESystem<  // TODO: later on use a simpler ODE system
@@ -71,11 +71,17 @@ public:
 
     MathLib::MatrixSpecifications getMatrixSpecifications() const final;
 
-    void setStaggeredCouplingTerm(StaggeredCouplingTerm* const coupling_term)
+    void setStaggeredCouplingTerm(
+        CoupledSolutionsForStaggeredScheme* const coupling_solutions)
     {
-        _coupling_term = coupling_term;
+        _coupling_solutions = coupling_solutions;
+    }
+    void setDecouplingSchemeType(const bool is_monolithic_scheme)
+    {
+        _is_monolithic_scheme = is_monolithic_scheme;
     }
 
+    bool useMonolithicScheme() const { return _is_monolithic_scheme; }
     virtual void setStaggeredCouplingTermToLocalAssemblers() {}
     void assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
                   GlobalMatrix& K, GlobalVector& b) final;
@@ -85,11 +91,6 @@ public:
                               const double dx_dx, GlobalMatrix& M,
                               GlobalMatrix& K, GlobalVector& b,
                               GlobalMatrix& Jac) final;
-
-    void setDecouplingSchemeType(const bool is_monolithic_scheme)
-    {
-        _is_monolithic_scheme = is_monolithic_scheme;
-    }
 
     std::vector<NumLib::IndexValueVector<GlobalIndexType>> const*
     getKnownSolutions(double const t) const final
@@ -209,10 +210,9 @@ protected:
 
     mutable bool _is_monolithic_scheme;
 
-    /// Pointer to StaggeredCouplingTerm, which contains the references to the
-    /// coupled processes and the references to the solutions of the coupled
-    /// processes.
-    StaggeredCouplingTerm* _coupling_term;
+    /// Pointer to CoupledSolutionsForStaggeredScheme, which contains the
+    /// references to the solutions of the coupled processes.
+    CoupledSolutionsForStaggeredScheme* _coupling_solutions;
 
     /// Order of the integration method for element-wise integration.
     /// The Gauss-Legendre integration method and available orders is
