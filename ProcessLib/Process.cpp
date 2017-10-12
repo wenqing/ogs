@@ -15,7 +15,7 @@
 #include "NumLib/ODESolver/ConvergenceCriterionPerComponent.h"
 #include "GlobalVectorFromNamedFunction.h"
 #include "ProcessVariable.h"
-#include "StaggeredCouplingTerm.h"
+#include "CoupledSolutionsForStaggeredScheme.h"
 
 namespace ProcessLib
 {
@@ -32,7 +32,7 @@ Process::Process(
       _named_function_caller(std::move(named_function_caller)),
       _global_assembler(std::move(jacobian_assembler)),
       _is_monolithic_scheme(true),
-      _coupling_term(nullptr),
+      _coupling_solutions(nullptr),
       _integration_order(integration_order),
       _process_variables(std::move(process_variables)),
       _boundary_conditions(parameters)
@@ -81,14 +81,12 @@ void Process::setInitialConditions(double const t, GlobalVector& x)
 
     SpatialPosition pos;
 
-    for (int variable_id = 0;
-         variable_id < static_cast<int>(_process_variables.size());
-         ++variable_id)
+    int variable_id = 0;
+    for (auto const& pv : _process_variables)
     {
-        ProcessVariable& pv = _process_variables[variable_id];
-        auto const& ic = pv.getInitialCondition();
+        auto const& ic = pv.get().getInitialCondition();
 
-        auto const num_comp = pv.getNumberOfComponents();
+        auto const num_comp = pv.get().getNumberOfComponents();
 
         for (int component_id = 0; component_id < num_comp; ++component_id)
         {
@@ -129,6 +127,11 @@ void Process::setInitialConditions(double const t, GlobalVector& x)
                 }
             }
         }
+
+        if (!_is_monolithic_scheme)
+            continue;
+
+        variable_id++;
     }
 }
 
