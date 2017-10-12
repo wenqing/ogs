@@ -11,7 +11,7 @@
 #include <cassert>
 #include "NumLib/DOF/DOFTableUtil.h"
 
-#include "StaggeredCouplingTerm.h"
+#include "CoupledSolutionsForStaggeredScheme.h"
 
 namespace ProcessLib
 {

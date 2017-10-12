@@ -16,7 +16,7 @@
 
 #include "NumLib/Function/Interpolation.h"
 
-#include "ProcessLib/StaggeredCouplingTerm.h"
+#include "ProcessLib/CoupledSolutionsForStaggeredScheme.h"
 
 #include "ProcessLib/HeatConduction/HeatConductionProcess.h"
 

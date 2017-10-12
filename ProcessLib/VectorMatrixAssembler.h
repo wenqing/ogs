@@ -12,7 +12,7 @@
 #include <vector>
 #include "NumLib/NumericsConfig.h"
 #include "AbstractJacobianAssembler.h"
-#include "StaggeredCouplingTerm.h"
+#include "CoupledSolutionsForStaggeredScheme.h"
 
 namespace NumLib
 {
