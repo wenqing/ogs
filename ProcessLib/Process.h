@@ -71,11 +71,18 @@ public:
 
     MathLib::MatrixSpecifications getMatrixSpecifications() const final;
 
-    void setStaggeredCouplingTerm(StaggeredCouplingTerm* const coupling_term)
+    void setStaggeredCouplingTerm(
+        CoupledSolutionsForStaggeredScheme* const coupling_solutions)
     {
         _coupled_solutions = coupled_solutions;
+
+    }
+    void setDecouplingSchemeType(const bool is_monolithic_scheme)
+    {
+        _is_monolithic_scheme = is_monolithic_scheme;
     }
 
+    bool useMonolithicScheme() const { return _is_monolithic_scheme; }
     virtual void setStaggeredCouplingTermToLocalAssemblers() {}
     void assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
                   GlobalMatrix& K, GlobalVector& b) final;
@@ -85,11 +92,6 @@ public:
                               const double dx_dx, GlobalMatrix& M,
                               GlobalMatrix& K, GlobalVector& b,
                               GlobalMatrix& Jac) final;
-
-    void setDecouplingSchemeType(const bool is_monolithic_scheme)
-    {
-        _is_monolithic_scheme = is_monolithic_scheme;
-    }
 
     std::vector<NumLib::IndexValueVector<GlobalIndexType>> const*
     getKnownSolutions(double const t) const final
