@@ -218,7 +218,7 @@ protected:
 
     /// Set the solutions of the previous time step to the coupled term.
     /// It only performs for the staggered scheme.
-    void setPreviousTimeStepSolutions();
+    void setCoupledSolutionsOfPreviousTimeStep();
 
     /// Order of the integration method for element-wise integration.
     /// The Gauss-Legendre integration method and available orders is
