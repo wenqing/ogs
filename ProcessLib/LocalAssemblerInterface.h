@@ -9,9 +9,6 @@
 
 #pragma once
 
-#include <unordered_map>
-#include <typeindex>
-
 #include "NumLib/NumericsConfig.h"
 #include "MathLib/Point3d.h"
 
@@ -38,11 +35,10 @@ public:
     virtual void assemble(double const t, std::vector<double> const& local_x,
                           std::vector<double>& local_M_data,
                           std::vector<double>& local_K_data,
-                          std::vector<double>& local_b_data) = 0;
+                          std::vector<double>& local_b_data);
 
     virtual void assembleWithCoupledTerm(
         double const t,
-        std::vector<double> const& local_x,
         std::vector<double>& local_M_data,
         std::vector<double>& local_K_data,
         std::vector<double>& local_b_data,
@@ -58,18 +54,17 @@ public:
                                       std::vector<double>& local_Jac_data);
 
     virtual void assembleWithJacobianAndCoupling(
-        double const t, std::vector<double> const& local_x,
-        std::vector<double> const& local_xdot, const double dxdot_dx,
-        const double dx_dx, std::vector<double>& local_M_data,
-        std::vector<double>& local_K_data, std::vector<double>& local_b_data,
-        std::vector<double>& local_Jac_data,
-        LocalCoupledSolutions const& coupled_solutions);
+        double const t, std::vector<double> const& local_xdot,
+        const double dxdot_dx, const double dx_dx,
+        std::vector<double>& local_M_data, std::vector<double>& local_K_data,
+        std::vector<double>& local_b_data, std::vector<double>& local_Jac_data,
+        LocalCoupledSolutions const& local_coupled_solutions);
 
     virtual void computeSecondaryVariable(
         std::size_t const mesh_item_id,
         NumLib::LocalToGlobalIndexMap const& dof_table, const double t,
         GlobalVector const& x,
-        CoupledSolutionsForStaggeredScheme const* coupled_term);
+        CoupledSolutionsForStaggeredScheme const* coupled_xs);
 
     virtual void preTimestep(std::size_t const mesh_item_id,
                              NumLib::LocalToGlobalIndexMap const& dof_table,
@@ -102,8 +97,7 @@ private:
     }
 
     virtual void computeSecondaryVariableWithCoupledProcessConcrete(
-        double const /*t*/, std::vector<double> const& /*local_x*/,
-        std::unordered_map<std::type_index, const std::vector<double>> const&
+        double const /*t*/, std::vector<std::vector<double>> const&
         /*coupled_local_solutions*/)
     {
     }

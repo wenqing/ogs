@@ -66,7 +66,7 @@ void LiquidFlowProcess::initializeConcreteProcess(
         pv.getShapeFunctionOrder(), _local_assemblers,
         mesh.isAxiallySymmetric(), integration_order, _gravitational_axis_id,
         _gravitational_acceleration, _reference_temperature,
-        *_material_properties, _coupled_solutions);
+        *_material_properties);
 
     _secondary_variables.addSecondaryVariable(
         "darcy_velocity",
@@ -115,10 +115,10 @@ void LiquidFlowProcess::computeSecondaryVariableConcrete(const double t,
 void LiquidFlowProcess::setCoupledSolutionsForStaggeredSchemeToLocalAssemblers()
 {
     DBUG("Compute the velocity for LiquidFlowProcess.");
+    /*
     GlobalExecutor::executeMemberOnDereferenced(
-        &LiquidFlowLocalAssemblerInterface::
-            setCoupledSolutionsForStaggeredScheme,
-        _local_assemblers, _coupled_solutions);
+        &LiquidFlowLocalAssemblerInterface::setStaggeredCouplingTerm,
+        _local_assemblers, _coupled_solutions);*/
 }
 
 }  // end of namespace

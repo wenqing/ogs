@@ -231,7 +231,6 @@ std::unique_ptr<SingleProcessData> makeSingleProcessData(
     Process& process,
     std::unique_ptr<NumLib::TimeDiscretization>&& time_disc,
     std::unique_ptr<NumLib::ConvergenceCriterion>&& conv_crit,
-    std::unordered_map<std::type_index, Process const&>&& coupled_processes,
     ProcessOutput&& process_output)
 {
     using Tag = NumLib::NonlinearSolverTag;
@@ -243,7 +242,7 @@ std::unique_ptr<SingleProcessData> makeSingleProcessData(
         return std::make_unique<SingleProcessData>(
             std::move(timestepper), *nonlinear_solver_picard,
             std::move(conv_crit), std::move(time_disc), process,
-            std::move(coupled_processes), std::move(process_output));
+            std::move(process_output));
     }
     if (auto* nonlinear_solver_newton =
             dynamic_cast<NumLib::NonlinearSolver<Tag::Newton>*>(
@@ -252,7 +251,7 @@ std::unique_ptr<SingleProcessData> makeSingleProcessData(
         return std::make_unique<SingleProcessData>(
             std::move(timestepper), *nonlinear_solver_newton,
             std::move(conv_crit), std::move(time_disc), process,
-            std::move(coupled_processes), std::move(process_output));
+            std::move(process_output));
     }
 
     OGS_FATAL("Encountered unknown nonlinear solver type. Aborting");
@@ -299,8 +298,7 @@ std::vector<std::unique_ptr<SingleProcessData>> createPerProcessData(
 
         per_process_data.emplace_back(makeSingleProcessData(
             std::move(timestepper), nl_slv, pcs, std::move(time_disc),
-            std::move(conv_crit), std::move(coupled_processes),
-            std::move(process_output)));
+            std::move(conv_crit), std::move(process_output)));
     }
 
     if (per_process_data.size() != processes.size())
@@ -478,9 +476,8 @@ bool UncoupledProcessesTimeLoop::setCoupledSolutions()
     if (use_monolithic_scheme)
         return false;
 
-    unsigned pcs_idx = 0;
     _solutions_of_coupled_processes.reserve(_per_process_data.size());
-    for (auto const& spd : _per_process_data)
+    for (unsigned pcs_idx = 0; pcs_idx < _per_process_data.size(); pcs_idx++)
     {
         auto const& x = *_process_solutions[pcs_idx];
         _solutions_of_coupled_processes.emplace_back(x);
@@ -491,9 +488,7 @@ bool UncoupledProcessesTimeLoop::setCoupledSolutions()
 
         // append a solution vector of suitable size
         _solutions_of_last_cpl_iteration.emplace_back(&x0);
-
-        ++pcs_idx;
-    }  // end of for (auto& spd : _per_process_data)
+    }
 
     return true;  // use staggered scheme.
 }
@@ -874,9 +869,8 @@ bool UncoupledProcessesTimeLoop::solveCoupledEquationSystemsByStaggeredScheme(
                 spd->process.preTimestep(x, t, dt, pcs_idx);
             }
 
-            CoupledSolutionsForStaggeredScheme coupled_solutions(
-                spd->coupled_processes,
-                _solutions_of_coupled_processes[pcs_idx], dt);
+            CoupledSolutionsForStaggeredScheme coupling_xs(
+                _solutions_of_coupled_processes, dt, pcs_idx);
 
             spd->process.setCoupledSolutionsForStaggeredScheme(
                 &coupled_solutions);
@@ -993,14 +987,11 @@ void UncoupledProcessesTimeLoop::outputSolutions(
                             spd->timestepper->getTimeStep().dt(), pcs_idx);
         if (is_staggered_coupling)
         {
-            CoupledSolutionsForStaggeredScheme coupled_solutions(
-                spd->coupled_processes,
-                _solutions_of_coupled_processes[pcs_idx], 0.0);
+            CoupledSolutionsForStaggeredScheme coupled_xs(
+                _solutions_of_coupled_processes, 0.0, pcs_idx);
 
-            spd->process.setCoupledSolutionsForStaggeredScheme(
-                &coupled_solutions);
-            spd->process
-                .setCoupledSolutionsForStaggeredSchemeToLocalAssemblers();
+            spd->process.setStaggeredCouplingTerm(&coupled_xs);
+            spd->process.setStaggeredCouplingTermToLocalAssemblers();
             (output_object.*output_class_member)(pcs, spd->process_output,
                                                  timestep, t, x);
         }
