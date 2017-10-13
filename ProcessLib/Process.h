@@ -53,7 +53,7 @@ public:
 
     /// Preprocessing before starting assembly for new timestep.
     void preTimestep(GlobalVector const& x, const double t,
-                     const double delta_t);
+                     const double delta_t, const unsigned variable_id);
 
     /// Postprocessing after a complete timestep.
     void postTimestep(GlobalVector const& x);
@@ -74,7 +74,7 @@ public:
     void setStaggeredCouplingTerm(
         CoupledSolutionsForStaggeredScheme* const coupling_solutions)
     {
-        _coupling_solutions = coupling_solutions;
+        _coupled_solutions = coupling_solutions;
     }
     void setDecouplingSchemeType(const bool is_monolithic_scheme)
     {
@@ -116,7 +116,8 @@ public:
     }
 
     // Get the solution of the previous time step.
-    virtual GlobalVector* getPreviousTimeStepSolution() const
+    virtual GlobalVector* getPreviousTimeStepSolution(
+        const unsigned /*variable_id*/) const
     {
         return nullptr;
     }
@@ -158,7 +159,8 @@ private:
 
     virtual void preTimestepConcreteProcess(GlobalVector const& /*x*/,
                                             const double /*t*/,
-                                            const double /*delta_t*/)
+                                            const double /*delta_t*/,
+                                            const unsigned /*variable_id*/)
     {
     }
 
@@ -212,7 +214,11 @@ protected:
 
     /// Pointer to CoupledSolutionsForStaggeredScheme, which contains the
     /// references to the solutions of the coupled processes.
-    CoupledSolutionsForStaggeredScheme* _coupling_solutions;
+    CoupledSolutionsForStaggeredScheme* _coupled_solutions;
+
+    /// Set the solutions of the previous time step to the coupled term.
+    /// It only performs for the staggered scheme.
+    void setPreviousTimeStepSolutions();
 
     /// Order of the integration method for element-wise integration.
     /// The Gauss-Legendre integration method and available orders is

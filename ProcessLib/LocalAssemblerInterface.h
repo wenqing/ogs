@@ -9,10 +9,6 @@
 
 #pragma once
 
-
-#include <unordered_map>
-#include <typeindex>
-
 #include "NumLib/NumericsConfig.h"
 #include "MathLib/Point3d.h"
 
@@ -23,8 +19,8 @@ class LocalToGlobalIndexMap;
 
 namespace ProcessLib
 {
-struct StaggeredCouplingTerm;
-struct LocalCouplingTerm;
+struct CoupledSolutionsForStaggeredScheme;
+struct LocalCoupledSolutions;
 
 /*! Common interface for local assemblers
  * NumLib::ODESystemTag::FirstOrderImplicitQuasilinear ODE systems.
@@ -36,17 +32,17 @@ class LocalAssemblerInterface
 public:
     virtual ~LocalAssemblerInterface() = default;
 
-    virtual void assemble(
-        double const t, std::vector<double> const& local_x,
-        std::vector<double>& local_M_data, std::vector<double>& local_K_data,
-        std::vector<double>& local_b_data) = 0;
+    virtual void assemble(double const t, std::vector<double> const& local_x,
+                          std::vector<double>& local_M_data,
+                          std::vector<double>& local_K_data,
+                          std::vector<double>& local_b_data);
 
-    virtual void assembleWithCoupledTerm(double const t,
-                                   std::vector<double> const& local_x,
-                                   std::vector<double>& local_M_data,
-                                   std::vector<double>& local_K_data,
-                                   std::vector<double>& local_b_data,
-                                   LocalCouplingTerm const& coupling_term);
+    virtual void assembleWithCoupledTerm(
+        double const t,
+        std::vector<double>& local_M_data,
+        std::vector<double>& local_K_data,
+        std::vector<double>& local_b_data,
+        LocalCoupledSolutions const& coupled_term);
 
     virtual void assembleWithJacobian(double const t,
                                       std::vector<double> const& local_x,
@@ -58,17 +54,17 @@ public:
                                       std::vector<double>& local_Jac_data);
 
     virtual void assembleWithJacobianAndCoupling(
-        double const t, std::vector<double> const& local_x,
-        std::vector<double> const& local_xdot, const double dxdot_dx,
-        const double dx_dx, std::vector<double>& local_M_data,
-        std::vector<double>& local_K_data, std::vector<double>& local_b_data,
-        std::vector<double>& local_Jac_data,
-        LocalCouplingTerm const& coupling_term);
+        double const t, std::vector<double> const& local_xdot,
+        const double dxdot_dx, const double dx_dx,
+        std::vector<double>& local_M_data, std::vector<double>& local_K_data,
+        std::vector<double>& local_b_data, std::vector<double>& local_Jac_data,
+        LocalCoupledSolutions const& coupled_term);
 
-    virtual void computeSecondaryVariable(std::size_t const mesh_item_id,
-                              NumLib::LocalToGlobalIndexMap const& dof_table,
-                              const double t, GlobalVector const& x,
-                              StaggeredCouplingTerm const* coupled_term);
+    virtual void computeSecondaryVariable(
+        std::size_t const mesh_item_id,
+        NumLib::LocalToGlobalIndexMap const& dof_table, const double t,
+        GlobalVector const& x,
+        CoupledSolutionsForStaggeredScheme const* coupled_xs);
 
     virtual void preTimestep(std::size_t const mesh_item_id,
                              NumLib::LocalToGlobalIndexMap const& dof_table,
@@ -95,15 +91,16 @@ private:
     }
 
     virtual void postTimestepConcrete(std::vector<double> const& /*local_x*/) {}
+    virtual void computeSecondaryVariableConcrete(
+        double const /*t*/, std::vector<double> const& /*local_x*/)
+    {
+    }
 
-    virtual void computeSecondaryVariableConcrete
-                (double const /*t*/, std::vector<double> const& /*local_x*/) {}
-
-    virtual void computeSecondaryVariableWithCoupledProcessConcrete
-            (double const /*t*/, std::vector<double> const& /*local_x*/,
-             std::unordered_map<std::type_index,
-             const std::vector<double>> const&
-             /*coupled_local_solutions*/) {}
+    virtual void computeSecondaryVariableWithCoupledProcessConcrete(
+        double const /*t*/, std::vector<std::vector<double>> const&
+        /*coupled_local_solutions*/)
+    {
+    }
 };
 
-} // namespace ProcessLib
+}  // namespace ProcessLib

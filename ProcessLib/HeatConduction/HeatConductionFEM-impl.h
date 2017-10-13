@@ -110,8 +110,9 @@ void LocalAssemblerData<ShapeFunction, IntegrationMethod, GlobalDim>::
                             std::vector<double>& local_M_data,
                             std::vector<double>& local_K_data,
                             std::vector<double>& /*local_b_data*/,
-                            LocalCouplingTerm const& coupled_term)
+                            LocalCoupledSolutions const& coupled_term)
 {
+    /*
     for (auto const& coupled_process_pair : coupled_term.coupled_processes)
     {
         if (coupled_process_pair.first ==
@@ -159,7 +160,7 @@ void LocalAssemblerData<ShapeFunction, IntegrationMethod, GlobalDim>::
                 "This coupled process is not presented for "
                 "HeatConduction process");
         }
-    }
+    }*/
 }
 
 }  // namespace HeatConduction

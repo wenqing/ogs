@@ -58,6 +58,16 @@ public:
     bool isLinear() const override { return false; }
     //! @}
 
+    // Get the solution of the previous time step.
+    virtual GlobalVector* getPreviousTimeStepSolution(
+        const int variable_id) const
+    {
+        return _xs_previous_timestep[variable_id].get();
+    }
+
+    void preTimestepConcreteProcess(GlobalVector const& x, const double t,
+                                    const double delta_t) override;
+
 private:
     void initializeConcreteProcess(
         NumLib::LocalToGlobalIndexMap const& dof_table,
@@ -73,9 +83,17 @@ private:
         const double dxdot_dx, const double dx_dx, GlobalMatrix& M,
         GlobalMatrix& K, GlobalVector& b, GlobalMatrix& Jac) override;
 
+    void preTimestepConcreteProcess(
+        GlobalVector const& x, double const t, double const dt,
+        const int variable_id) override;
+
     HTProcessData _process_data;
 
     std::vector<std::unique_ptr<HTLocalAssemblerInterface>> _local_assemblers;
+    
+    /// Solutions of the previous time step
+    std::array<std::unique_ptr<GlobalVector, 2> _xs_previous_timestep;
+
 };
 
 }  // namespace HT

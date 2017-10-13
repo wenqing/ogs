@@ -33,22 +33,6 @@ HeatConductionProcess::HeatConductionProcess(
 {
 }
 
-void HeatConductionProcess::preTimestepConcreteProcess(GlobalVector const& x,
-                                            const double /*t*/,
-                                            const double /*delta_t*/)
-{
-    if (!_x_previous_timestep)
-    {
-        _x_previous_timestep =
-            MathLib::MatrixVectorTraits<GlobalVector>::newInstance(x);
-    }
-    else
-    {
-        auto& x0 = *_x_previous_timestep;
-        MathLib::LinAlg::copy(x, x0);
-    }
-}
-
 void HeatConductionProcess::initializeConcreteProcess(
     NumLib::LocalToGlobalIndexMap const& dof_table,
     MeshLib::Mesh const& mesh,
@@ -95,7 +79,7 @@ void HeatConductionProcess::assembleConcreteProcess(const double t,
     // Call global assembler for each local assembly item.
     GlobalExecutor::executeMemberDereferenced(
         _global_assembler, &VectorMatrixAssembler::assemble, _local_assemblers,
-        *_local_to_global_index_map, t, x, M, K, b, _coupling_term);
+        *_local_to_global_index_map, t, x, M, K, b, _coupled_solutions);
 }
 
 void HeatConductionProcess::assembleWithJacobianConcreteProcess(
@@ -109,7 +93,7 @@ void HeatConductionProcess::assembleWithJacobianConcreteProcess(
     GlobalExecutor::executeMemberDereferenced(
         _global_assembler, &VectorMatrixAssembler::assembleWithJacobian,
         _local_assemblers, *_local_to_global_index_map, t, x, xdot, dxdot_dx,
-        dx_dx, M, K, b, Jac, _coupling_term);
+        dx_dx, M, K, b, Jac, _coupled_solutions);
 }
 
 void HeatConductionProcess::computeSecondaryVariableConcrete(
@@ -119,7 +103,7 @@ void HeatConductionProcess::computeSecondaryVariableConcrete(
     GlobalExecutor::executeMemberOnDereferenced(
             &HeatConductionLocalAssemblerInterface::computeSecondaryVariable,
             _local_assemblers, *_local_to_global_index_map, t, x,
-            _coupling_term);
+            _coupled_solutions);
 }
 
 }  // namespace HeatConduction

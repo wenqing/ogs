@@ -41,15 +41,6 @@ public:
     void computeSecondaryVariableConcrete(
         double const t, GlobalVector const& x) override;
 
-    void preTimestepConcreteProcess(GlobalVector const& x, const double t,
-                                    const double delta_t) override;
-
-    // Get the solution of the previous time step.
-    GlobalVector* getPreviousTimeStepSolution() const override
-    {
-        return _x_previous_timestep.get();
-    }
-
 private:
     void initializeConcreteProcess(
         NumLib::LocalToGlobalIndexMap const& dof_table,
@@ -69,9 +60,6 @@ private:
 
     std::vector<std::unique_ptr<HeatConductionLocalAssemblerInterface>>
         _local_assemblers;
-
-    /// Solution of the previous time step
-    std::unique_ptr<GlobalVector> _x_previous_timestep = nullptr;
 };
 
 }  // namespace HeatConduction

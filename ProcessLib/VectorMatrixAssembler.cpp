@@ -15,40 +15,11 @@
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "LocalAssemblerInterface.h"
 
+#include "CoupledSolutionsForStaggeredScheme.h"
 #include "Process.h"
 
 namespace ProcessLib
 {
-static std::unordered_map<std::type_index, const std::vector<double>>
-getPreviousLocalSolutionsOfCoupledProcesses(
-    const StaggeredCouplingTerm& coupling_term,
-    const std::vector<GlobalIndexType>& indices)
-{
-    std::unordered_map<std::type_index, const std::vector<double>>
-        local_coupled_xs0;
-
-    for (auto const& coupled_process_pair : coupling_term.coupled_processes)
-    {
-        auto const& coupled_pcs = coupled_process_pair.second;
-        auto const prevous_time_x = coupled_pcs.getPreviousTimeStepSolution();
-        if (prevous_time_x)
-        {
-            auto const local_coupled_x0 = prevous_time_x->get(indices);
-            BaseLib::insertIfTypeIndexKeyUniqueElseError(
-                local_coupled_xs0, coupled_process_pair.first, local_coupled_x0,
-                "local_coupled_x0");
-        }
-        else
-        {
-            const std::vector<double> local_coupled_x0;
-            BaseLib::insertIfTypeIndexKeyUniqueElseError(
-                local_coupled_xs0, coupled_process_pair.first, local_coupled_x0,
-                "local_coupled_x0");
-        }
-    }
-    return local_coupled_xs0;
-}
-
 VectorMatrixAssembler::VectorMatrixAssembler(
     std::unique_ptr<AbstractJacobianAssembler>&& jacobian_assembler)
     : _jacobian_assembler(std::move(jacobian_assembler))
@@ -59,42 +30,32 @@ void VectorMatrixAssembler::assemble(
     const std::size_t mesh_item_id, LocalAssemblerInterface& local_assembler,
     const NumLib::LocalToGlobalIndexMap& dof_table, const double t,
     const GlobalVector& x, GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b,
-    const StaggeredCouplingTerm* coupling_term)
+    const CoupledSolutionsForStaggeredScheme* cpl_xs)
 {
     auto const indices = NumLib::getIndices(mesh_item_id, dof_table);
-    auto const local_x = x.get(indices);
 
     _local_M_data.clear();
     _local_K_data.clear();
     _local_b_data.clear();
 
-    if (!coupling_term)
+    if (!cpl_xs)
     {
+        auto const local_x = x.get(indices);
         local_assembler.assemble(t, local_x, _local_M_data, _local_K_data,
                                  _local_b_data);
     }
     else
     {
-        auto local_coupled_xs0 = getPreviousLocalSolutionsOfCoupledProcesses(
-            *coupling_term, indices);
-        auto local_coupled_xs = getCurrentLocalSolutionsOfCoupledProcesses(
-            coupling_term->coupled_xs, indices);
+        auto local_coupled_xs0 = getPreviousLocalSolutions(*cpl_xs, indices);
+        auto local_coupled_xs = getCurrentLocalSolutions(*cpl_xs, indices);
 
-        if (local_coupled_xs0.empty() || local_coupled_xs.empty())
-        {
-            local_assembler.assemble(t, local_x, _local_M_data, _local_K_data,
-                                     _local_b_data);
-        }
-        else
-        {
-            ProcessLib::LocalCouplingTerm local_coupling_term(
-                coupling_term->dt, coupling_term->coupled_processes,
-                std::move(local_coupled_xs0), std::move(local_coupled_xs));
+        ProcessLib::LocalCoupledSolutions local_coupled_solutions(
+            cpl_xs->dt, cpl_xs->variable_id, std::move(local_coupled_xs0),
+            std::move(local_coupled_xs));
 
-            local_assembler.assembleWithCoupledTerm(
-                t, local_x, _local_M_data, _local_K_data, _local_b_data,
-                local_coupling_term);
-        }
+        local_assembler.assembleWithCoupledTerm(t, _local_M_data, _local_K_data,
+                                                _local_b_data,
+                                                local_coupled_solutions);
     }
 
     auto const num_r_c = indices.size();
@@ -123,10 +84,9 @@ void VectorMatrixAssembler::assembleWithJacobian(
     NumLib::LocalToGlobalIndexMap const& dof_table, const double t,
     GlobalVector const& x, GlobalVector const& xdot, const double dxdot_dx,
     const double dx_dx, GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b,
-    GlobalMatrix& Jac, const StaggeredCouplingTerm* coupling_term)
+    GlobalMatrix& Jac, const CoupledSolutionsForStaggeredScheme* cpl_xs)
 {
     auto const indices = NumLib::getIndices(mesh_item_id, dof_table);
-    auto const local_x = x.get(indices);
     auto const local_xdot = xdot.get(indices);
 
     _local_M_data.clear();
@@ -134,35 +94,26 @@ void VectorMatrixAssembler::assembleWithJacobian(
     _local_b_data.clear();
     _local_Jac_data.clear();
 
-    if (!coupling_term)
+    if (!cpl_xs)
     {
+        auto const local_x = x.get(indices);
         _jacobian_assembler->assembleWithJacobian(
             local_assembler, t, local_x, local_xdot, dxdot_dx, dx_dx,
             _local_M_data, _local_K_data, _local_b_data, _local_Jac_data);
     }
     else
     {
-        auto local_coupled_xs0 = getPreviousLocalSolutionsOfCoupledProcesses(
-            *coupling_term, indices);
-        auto local_coupled_xs = getCurrentLocalSolutionsOfCoupledProcesses(
-            coupling_term->coupled_xs, indices);
-        if (local_coupled_xs0.empty() || local_coupled_xs.empty())
-        {
-            _jacobian_assembler->assembleWithJacobian(
-                local_assembler, t, local_x, local_xdot, dxdot_dx, dx_dx,
-                _local_M_data, _local_K_data, _local_b_data, _local_Jac_data);
-        }
-        else
-        {
-            ProcessLib::LocalCouplingTerm local_coupling_term(
-                coupling_term->dt, coupling_term->coupled_processes,
-                std::move(local_coupled_xs0), std::move(local_coupled_xs));
+        auto local_coupled_xs0 = getPreviousLocalSolutions(*cpl_xs, indices);
+        auto local_coupled_xs = getCurrentLocalSolutions(*cpl_xs, indices);
 
-            _jacobian_assembler->assembleWithJacobianAndCoupling(
-                local_assembler, t, local_x, local_xdot, dxdot_dx, dx_dx,
-                _local_M_data, _local_K_data, _local_b_data, _local_Jac_data,
-                local_coupling_term);
-        }
+        ProcessLib::LocalCoupledSolutions local_coupled_solutions(
+            cpl_xs->dt, cpl_xs->variable_id, std::move(local_coupled_xs0),
+            std::move(local_coupled_xs));
+
+        _jacobian_assembler->assembleWithJacobianAndCoupling(
+            local_assembler, t, local_xdot, dxdot_dx, dx_dx, _local_M_data,
+            _local_K_data, _local_b_data, _local_Jac_data,
+            local_coupled_solutions);
     }
 
     auto const num_r_c = indices.size();
