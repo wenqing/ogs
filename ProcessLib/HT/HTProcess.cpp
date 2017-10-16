@@ -13,6 +13,8 @@
 
 #include "ProcessLib/Utils/CreateLocalAssemblers.h"
 
+#include "HTMaterialProperties.h"
+
 #include "MonolithicHTFEM.h"
 #include "StaggeredHTFEM.h"
 
@@ -97,11 +99,12 @@ void HTProcess::assembleWithJacobianConcreteProcess(
         _global_assembler, &VectorMatrixAssembler::assembleWithJacobian,
         _local_assemblers, *_local_to_global_index_map, t, x, xdot, dxdot_dx,
         dx_dx, M, K, b, Jac, _coupled_solutions);
+}
 
 void HTProcess::preTimestepConcreteProcess(GlobalVector const& x,
-                                            const double /*t*/,
-                                            const double /*delta_t*/,
-                                            const int variable_id)
+                                           const double /*t*/,
+                                           const double /*delta_t*/,
+                                           const int variable_id)
 {
     assert(variable_id < 2);
 
@@ -118,7 +121,7 @@ void HTProcess::preTimestepConcreteProcess(GlobalVector const& x,
         auto& x0 = *_xs_previous_timestep[variable_id];
         MathLib::LinAlg::copy(x, x0);
     }
-    
+
     auto& x0 = *_xs_previous_timestep[variable_id];
     MathLib::LinAlg::setLocalAccessibleVector(x0);
 }

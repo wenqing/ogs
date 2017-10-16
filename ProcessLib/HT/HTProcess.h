@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include "HTMaterialProperties.h"
 #include "NumLib/Extrapolation/LocalLinearLeastSquaresExtrapolator.h"
 #include "ProcessLib/Process.h"
 
@@ -18,6 +17,7 @@ namespace ProcessLib
 namespace HT
 {
 class HTLocalAssemblerInterface;
+struct HTMaterialProperties;
 
 /**
  * # HT process
@@ -83,17 +83,16 @@ private:
         const double dxdot_dx, const double dx_dx, GlobalMatrix& M,
         GlobalMatrix& K, GlobalVector& b, GlobalMatrix& Jac) override;
 
-    void preTimestepConcreteProcess(
-        GlobalVector const& x, double const t, double const dt,
-        const int variable_id) override;
+    void preTimestepConcreteProcess(GlobalVector const& x, double const t,
+                                    double const dt,
+                                    const int variable_id) override;
 
     HTMaterialProperties _process_data;
 
     std::vector<std::unique_ptr<HTLocalAssemblerInterface>> _local_assemblers;
-    
-    /// Solutions of the previous time step
-    std::array<std::unique_ptr<GlobalVector, 2> _xs_previous_timestep;
 
+    /// Solutions of the previous time step
+    std::array < std::unique_ptr<GlobalVector, 2> _xs_previous_timestep;
 };
 
 }  // namespace HT

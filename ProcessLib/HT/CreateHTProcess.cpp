@@ -44,11 +44,10 @@ std::unique_ptr<Process> createHTProcess(
 
     auto process_variables = findProcessVariables(
         variables, pv_config,
-        {
-        //! \ogs_file_param_special{prj__processes__process__HT__process_variables__temperature}
-        "temperature",
-        //! \ogs_file_param_special{prj__processes__process__HT__process_variables__pressure}
-        "pressure"});
+        {//! \ogs_file_param_special{prj__processes__process__HT__process_variables__temperature}
+         "temperature",
+         //! \ogs_file_param_special{prj__processes__process__HT__process_variables__pressure}
+         "pressure"});
 
     MaterialLib::PorousMedium::PorousMediaProperties porous_media_properties{
         MaterialLib::PorousMedium::createPorousMediaProperties(
@@ -60,7 +59,7 @@ std::unique_ptr<Process> createHTProcess(
         MaterialLib::Fluid::createFluidProperties(fluid_config);
 
     // Parameter for the density of the fluid.
-    auto& fluid_reference_density= findParameter<double>(
+    auto& fluid_reference_density = findParameter<double>(
         config,
         //! \ogs_file_param_special{prj__processes__process__HT__fluid_reference_density}
         "fluid_reference_density", parameters, 1);
@@ -136,16 +135,16 @@ std::unique_ptr<Process> createHTProcess(
     }
 
     HTMaterialProperties process_data{std::move(porous_media_properties),
-                               density_solid,
-                               fluid_reference_density,
-                               std::move(fluid_properties),
-                               thermal_dispersivity_longitudinal,
-                               thermal_dispersivity_transversal,
-                               specific_heat_capacity_solid,
-                               thermal_conductivity_solid,
-                               thermal_conductivity_fluid,
-                               specific_body_force,
-                               has_gravity};
+                                      density_solid,
+                                      fluid_reference_density,
+                                      std::move(fluid_properties),
+                                      thermal_dispersivity_longitudinal,
+                                      thermal_dispersivity_transversal,
+                                      specific_heat_capacity_solid,
+                                      thermal_conductivity_solid,
+                                      thermal_conductivity_fluid,
+                                      specific_body_force,
+                                      has_gravity};
 
     SecondaryVariableCollection secondary_variables;
 
