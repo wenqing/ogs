@@ -14,7 +14,7 @@
 #include <Eigen/Dense>
 #include <vector>
 
-#include "HTProcessData.h"
+#include "HTMaterialProperties.h"
 #include "NumLib/DOF/DOFTableUtil.h"
 #include "NumLib/Extrapolation/ExtrapolatableElement.h"
 #include "NumLib/Fem/FiniteElement/TemplateIsoparametric.h"
@@ -56,7 +56,7 @@ public:
                     std::size_t const local_matrix_size,
                     bool is_axially_symmetric,
                     unsigned const integration_order,
-                    HTProcessData const& process_data)
+                    HTMaterialProperties const& process_data)
         : HTFEM<ShapeFunction, IntegrationMethod, GlobalDim>(
               element, local_matrix_size, is_axially_symmetric,
               integration_order, process_data, NUM_NODAL_DOF)

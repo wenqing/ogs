@@ -13,6 +13,8 @@
 
 #include "ProcessLib/Utils/CreateLocalAssemblers.h"
 
+#include "HTMaterialProperties.h"
+
 #include "MonolithicHTFEM.h"
 #include "StaggeredHTFEM.h"
 
@@ -26,7 +28,7 @@ HTProcess::HTProcess(
     std::vector<std::unique_ptr<ParameterBase>> const& parameters,
     unsigned const integration_order,
     std::vector<std::reference_wrapper<ProcessVariable>>&& process_variables,
-    HTProcessData&& process_data,
+    HTMaterialProperties&& process_data,
     SecondaryVariableCollection&& secondary_variables,
     NumLib::NamedFunctionCaller&& named_function_caller)
     : Process(mesh, std::move(jacobian_assembler), parameters,
@@ -100,9 +102,9 @@ void HTProcess::assembleWithJacobianConcreteProcess(
 }
 
 void HTProcess::preTimestepConcreteProcess(GlobalVector const& x,
-                                            const double /*t*/,
-                                            const double /*delta_t*/,
-                                            const int variable_id)
+                                           const double /*t*/,
+                                           const double /*delta_t*/,
+                                           const int variable_id)
 {
     assert(variable_id < 2);
 
@@ -119,7 +121,7 @@ void HTProcess::preTimestepConcreteProcess(GlobalVector const& x,
         auto& x0 = *_xs_previous_timestep[variable_id];
         MathLib::LinAlg::copy(x, x0);
     }
-    
+
     auto& x0 = *_xs_previous_timestep[variable_id];
     MathLib::LinAlg::setLocalAccessibleVector(x0);
 }
