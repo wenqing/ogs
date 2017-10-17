@@ -157,23 +157,25 @@ std::unique_ptr<Process> createHTProcess(
             //! \ogs_file_param_special{prj__processes__process__HT__solid_thermal_expansion__biot_constant}
             *solid_config, "biot_constant", parameters, 1);
 
-        HTMaterialProperties process_data{std::move(porous_media_properties),
-                                          density_solid,
-                                          fluid_reference_density,
-                                          std::move(fluid_properties),
-                                          thermal_dispersivity_longitudinal,
-                                          thermal_dispersivity_transversal,
-                                          specific_heat_capacity_solid,
-                                          thermal_conductivity_solid,
-                                          thermal_conductivity_fluid,
-                                          solid_thermal_expansion,
-                                          biot_constant,
-                                          specific_body_force,
-                                          has_gravity};
+        std::unique_ptr<HTMaterialProperties> material_properties =
+            std::make_unique<HTMaterialProperties>(
+                std::move(porous_media_properties),
+                density_solid,
+                fluid_reference_density,
+                std::move(fluid_properties),
+                thermal_dispersivity_longitudinal,
+                thermal_dispersivity_transversal,
+                specific_heat_capacity_solid,
+                thermal_conductivity_solid,
+                thermal_conductivity_fluid,
+                solid_thermal_expansion,
+                biot_constant,
+                specific_body_force,
+                has_gravity);
 
         return std::make_unique<HTProcess>(
             mesh, std::move(jacobian_assembler), parameters, integration_order,
-            std::move(process_variables), std::move(process_data),
+            std::move(process_variables), std::move(material_properties),
             std::move(secondary_variables), std::move(named_function_caller));
     }
 
@@ -181,23 +183,25 @@ std::unique_ptr<Process> createHTProcess(
         "default solid thermal expansion", 0.);
     ConstantParameter<double> default_biot_constant("default_biot constant",
                                                     0.);
-    HTMaterialProperties process_data{std::move(porous_media_properties),
-                                      density_solid,
-                                      fluid_reference_density,
-                                      std::move(fluid_properties),
-                                      thermal_dispersivity_longitudinal,
-                                      thermal_dispersivity_transversal,
-                                      specific_heat_capacity_solid,
-                                      thermal_conductivity_solid,
-                                      thermal_conductivity_fluid,
-                                      default_solid_thermal_expansion,
-                                      default_biot_constant,
-                                      specific_body_force,
-                                      has_gravity};
+    std::unique_ptr<HTMaterialProperties> material_properties =
+        std::make_unique<HTMaterialProperties>(
+            std::move(porous_media_properties),
+            density_solid,
+            fluid_reference_density,
+            std::move(fluid_properties),
+            thermal_dispersivity_longitudinal,
+            thermal_dispersivity_transversal,
+            specific_heat_capacity_solid,
+            thermal_conductivity_solid,
+            thermal_conductivity_fluid,
+            default_solid_thermal_expansion,
+            default_biot_constant,
+            specific_body_force,
+            has_gravity);
 
     return std::make_unique<HTProcess>(
         mesh, std::move(jacobian_assembler), parameters, integration_order,
-        std::move(process_variables), std::move(process_data),
+        std::move(process_variables), std::move(material_properties),
         std::move(secondary_variables), std::move(named_function_caller));
 }
 
