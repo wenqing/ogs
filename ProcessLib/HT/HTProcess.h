@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "NumLib/Extrapolation/LocalLinearLeastSquaresExtrapolator.h"
 #include "ProcessLib/Process.h"
 
@@ -48,7 +50,7 @@ public:
               unsigned const integration_order,
               std::vector<std::reference_wrapper<ProcessVariable>>&&
                   process_variables,
-              HTMaterialProperties&& process_data,
+              std::unique_ptr<HTMaterialProperties>&& material_properties,
               SecondaryVariableCollection&& secondary_variables,
               NumLib::NamedFunctionCaller&& named_function_caller);
 
@@ -64,9 +66,6 @@ public:
     {
         return _xs_previous_timestep[variable_id].get();
     }
-
-    void preTimestepConcreteProcess(GlobalVector const& x, const double t,
-                                    const double delta_t) override;
 
 private:
     void initializeConcreteProcess(
@@ -85,14 +84,14 @@ private:
 
     void preTimestepConcreteProcess(GlobalVector const& x, double const t,
                                     double const dt,
-                                    const int variable_id) override;
+                                    const unsigned variable_id) override;
 
-    HTMaterialProperties _process_data;
+    const std::unique_ptr<HTMaterialProperties> _material_properties;
 
     std::vector<std::unique_ptr<HTLocalAssemblerInterface>> _local_assemblers;
 
     /// Solutions of the previous time step
-    std::array < std::unique_ptr<GlobalVector, 2> _xs_previous_timestep;
+    std::array<std::unique_ptr<GlobalVector>, 2> _xs_previous_timestep;
 };
 
 }  // namespace HT
