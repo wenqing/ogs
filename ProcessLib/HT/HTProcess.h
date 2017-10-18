@@ -61,11 +61,13 @@ public:
     //! @}
 
     // Get the solution of the previous time step.
-    virtual GlobalVector* getPreviousTimeStepSolution(
-        const int variable_id) const
+    GlobalVector* getPreviousTimeStepSolution(
+        const unsigned variable_id) const override
     {
         return _xs_previous_timestep[variable_id].get();
     }
+
+    void setCoupledTermForTheStaggeredSchemeToLocalAssemblers() override;
 
 private:
     void initializeConcreteProcess(
