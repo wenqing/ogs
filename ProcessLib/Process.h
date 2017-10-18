@@ -71,7 +71,7 @@ public:
 
     MathLib::MatrixSpecifications getMatrixSpecifications() const final;
 
-    void setStaggeredCouplingTerm(
+    void setCoupledTermForTheStaggeredScheme(
         CoupledSolutionsForStaggeredScheme* const coupling_solutions)
     {
         _coupled_solutions = coupling_solutions;
@@ -82,7 +82,7 @@ public:
     }
 
     bool useMonolithicScheme() const { return _is_monolithic_scheme; }
-    virtual void setStaggeredCouplingTermToLocalAssemblers() {}
+    virtual void setCoupledTermForTheStaggeredSchemeToLocalAssemblers() {}
     void assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
                   GlobalMatrix& K, GlobalVector& b) final;
 

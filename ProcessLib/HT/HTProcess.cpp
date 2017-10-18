@@ -128,5 +128,14 @@ void HTProcess::preTimestepConcreteProcess(GlobalVector const& x,
     MathLib::LinAlg::setLocalAccessibleVector(x0);
 }
 
+void HTProcess::setCoupledTermForTheStaggeredSchemeToLocalAssemblers()
+{
+    DBUG("Set the coupled term for the staggered scheme to local assembers.");
+
+    GlobalExecutor::executeMemberOnDereferenced(
+        &HTLocalAssemblerInterface::setStaggeredCouplingTerm, _local_assemblers,
+        _coupled_solutions);
+}
+
 }  // namespace HT
 }  // namespace ProcessLib
