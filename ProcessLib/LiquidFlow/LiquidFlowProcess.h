@@ -83,13 +83,6 @@ public:
         return _gravitational_acceleration;
     }
 
-    LiquidFlowMaterialProperties* getLiquidFlowMaterialProperties() const
-    {
-        return _material_properties.get();
-    }
-
-    void setCoupledSolutionsForStaggeredSchemeToLocalAssemblers() override;
-
 private:
     void initializeConcreteProcess(
         NumLib::LocalToGlobalIndexMap const& dof_table,
