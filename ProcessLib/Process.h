@@ -67,7 +67,8 @@ public:
 
     void initialize();
 
-    void setInitialConditions(const double t, GlobalVector& x);
+    void setInitialConditions(const unsigned pcs_id, const double t,
+                              GlobalVector& x);
 
     MathLib::MatrixSpecifications getMatrixSpecifications() const final;
 
@@ -82,7 +83,7 @@ public:
         _is_monolithic_scheme = is_monolithic_scheme;
     }
 
-    bool useMonolithicScheme() const { return _is_monolithic_scheme; }
+    bool isMonolithicSchemeUsed() const { return _is_monolithic_scheme; }
     virtual void setCoupledTermForTheStaggeredSchemeToLocalAssemblers() {}
     void assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
                   GlobalMatrix& K, GlobalVector& b) final;
@@ -195,6 +196,9 @@ private:
     /// Computes and stores global matrix' sparsity pattern from given
     /// DOF-table.
     void computeSparsityPattern();
+
+    void setVariableInitialCondition(const int variable_id, double const t,
+                                     GlobalVector& x);
 
 protected:
     MeshLib::Mesh& _mesh;
