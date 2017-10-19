@@ -77,63 +77,74 @@ void Process::initialize()
     }
 }
 
-void Process::setInitialConditions(double const t, GlobalVector& x)
+void Process::setVariableInitialCondition(const int variable_id, double const t,
+                                          GlobalVector& x)
 {
-    DBUG("Set initial conditions.");
-
     SpatialPosition pos;
 
-    int variable_id = 0;
-    for (auto const& pv : _process_variables)
+    auto const& pv = _process_variables[variable_id];
+    DBUG("Set the initial condition of variable %s.",
+         pv.get().getName().data());
+
+    auto const& ic = pv.get().getInitialCondition();
+
+    auto const num_comp = pv.get().getNumberOfComponents();
+
+    const int mesh_subset_id = _is_monolithic_scheme ? variable_id : 0;
+
+    for (int component_id = 0; component_id < num_comp; ++component_id)
     {
-        auto const& ic = pv.get().getInitialCondition();
-
-        auto const num_comp = pv.get().getNumberOfComponents();
-
-        for (int component_id = 0; component_id < num_comp; ++component_id)
+        auto const& mesh_subsets = _local_to_global_index_map->getMeshSubsets(
+            mesh_subset_id, component_id);
+        for (auto const& mesh_subset : mesh_subsets)
         {
-            auto const& mesh_subsets =
-                _local_to_global_index_map->getMeshSubsets(variable_id,
-                                                           component_id);
-            for (auto const& mesh_subset : mesh_subsets)
+            auto const mesh_id = mesh_subset->getMeshID();
+            for (auto const* node : mesh_subset->getNodes())
             {
-                auto const mesh_id = mesh_subset->getMeshID();
-                for (auto const* node : mesh_subset->getNodes())
-                {
-                    MeshLib::Location const l(
-                        mesh_id, MeshLib::MeshItemType::Node, node->getID());
+                MeshLib::Location const l(mesh_id, MeshLib::MeshItemType::Node,
+                                          node->getID());
 
-                    pos.setNodeID(node->getID());
-                    auto const& ic_value = ic(t, pos);
+                pos.setNodeID(node->getID());
+                auto const& ic_value = ic(t, pos);
 
-                    auto global_index =
-                        std::abs(_local_to_global_index_map->getGlobalIndex(
-                            l, variable_id, component_id));
+                auto global_index =
+                    std::abs(_local_to_global_index_map->getGlobalIndex(
+                        l, mesh_subset_id, component_id));
 #ifdef USE_PETSC
-                    // The global indices of the ghost entries of the global
-                    // matrix
-                    // or the global vectors need to be set as negative values
-                    // for
-                    // equation assembly, however the global indices start from
-                    // zero. Therefore, any ghost entry with zero index is
-                    // assigned
-                    // an negative value of the vector size or the matrix
-                    // dimension.
-                    // To assign the initial value for the ghost entries, the
-                    // negative indices of the ghost entries are restored to
-                    // zero.
-                    if (global_index == x.size())
-                        global_index = 0;
+                // The global indices of the ghost entries of the global
+                // matrix
+                // or the global vectors need to be set as negative values
+                // for
+                // equation assembly, however the global indices start from
+                // zero. Therefore, any ghost entry with zero index is
+                // assigned
+                // an negative value of the vector size or the matrix
+                // dimension.
+                // To assign the initial value for the ghost entries, the
+                // negative indices of the ghost entries are restored to
+                // zero.
+                if (global_index == x.size())
+                    global_index = 0;
 #endif
-                    x.set(global_index, ic_value[component_id]);
-                }
+                x.set(global_index, ic_value[component_id]);
             }
         }
+    }
+}
 
-        if (!_is_monolithic_scheme)
-            continue;
+void Process::setInitialConditions(const unsigned pcs_id, double const t,
+                                   GlobalVector& x)
+{
+    if (!_is_monolithic_scheme)
+    {
+        setVariableInitialCondition(pcs_id, t, x);
+        return;
+    }
 
-        variable_id++;
+    for (std::size_t variable_id = 0; variable_id < _process_variables.size();
+         variable_id++)
+    {
+        setVariableInitialCondition(variable_id, t, x);
     }
 }
 
