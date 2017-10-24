@@ -190,7 +190,7 @@ public:
                                  std::vector<double>& /*local_M_data*/,
                                  std::vector<double>& local_K_data,
                                  std::vector<double>& local_b_data,
-                                 LocalCouplingTerm const& coupled_term)
+                                 LocalCouplingTerm const& coupled_term) override
     {
 
         const double dt = coupled_term.dt;
@@ -438,7 +438,8 @@ public:
 
         return st_result;
     }
-    virtual std::vector<double> const& getIntPtEpsilon(
+
+    std::vector<double> const& getIntPtEpsilon(
         const double /*t*/,
         GlobalVector const& /*current_solution*/,
         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,

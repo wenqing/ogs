@@ -40,7 +40,9 @@ public:
     //! @{
     bool isLinear() const override;
     //! @}
-    virtual std::vector<double> getEpsilon(std::size_t const element_id) const
+
+    std::vector<double> getIntStrainEnergyTensile(
+        std::size_t const element_id) const
     {
         return _local_assemblers[element_id]->getIntPtStrainEnergyTensile();
     }
