@@ -43,6 +43,8 @@
 #include "ProcessLib/LIE/SmallDeformation/CreateSmallDeformationProcess.h"
 #include "ProcessLib/LiquidFlow/CreateLiquidFlowProcess.h"
 #include "ProcessLib/PhaseField/CreatePhaseFieldProcess.h"
+#include "ProcessLib/PhaseFieldSmallDeformation/CreatePhaseFieldSmallDeformationProcess.h"
+#include "ProcessLib/PhaseFieldStaggered/CreatePhaseFieldStaggeredProcess.h"
 #include "ProcessLib/RichardsFlow/CreateRichardsFlowProcess.h"
 #include "ProcessLib/SmallDeformation/CreateSmallDeformationProcess.h"
 #include "ProcessLib/TES/CreateTESProcess.h"
@@ -420,6 +422,37 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config,
                     break;
             }
         }
+        else if (type == "PHASE_FIELD_SMALL_DEFORMATION")
+        {
+            switch (_mesh_vec[0]->getDimension())
+            {
+                case 2:
+                    process = ProcessLib::PhaseFieldSmallDeformation::
+                        createPhaseFieldSmallDeformationProcess<2>(
+                            *_mesh_vec[0], std::move(jacobian_assembler),
+                            _process_variables, _parameters, integration_order,
+                            process_config);
+                    break;
+                case 3:
+                    process = ProcessLib::PhaseFieldSmallDeformation::
+                        createPhaseFieldSmallDeformationProcess<3>(
+                            *_mesh_vec[0], std::move(jacobian_assembler),
+                            _process_variables, _parameters, integration_order,
+                            process_config);
+                    break;
+                default:
+                    OGS_FATAL(
+                        "PHASE_FIELD_SMALL_DEFORMATION process does not support "
+                        "given dimension");
+            }
+        }
+        else if (type == "PHASE_FIELD_STAGGERED")
+        {
+            process = nullptr; /* ProcessLib::PhaseFieldStaggered::createPhaseFieldStaggeredProcess(
+                *_mesh_vec[0], std::move(jacobian_assembler),
+                _process_variables, _parameters, integration_order,
+                process_config);*/
+        }
         else if (type == "SMALL_DEFORMATION")
         {
             switch (_mesh_vec[0]->getDimension())
@@ -523,7 +556,6 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config,
                     _process_variables, _parameters, integration_order,
                     process_config, _curves);
         }
-
         else
         {
             OGS_FATAL("Unknown process type: %s", type.c_str());
