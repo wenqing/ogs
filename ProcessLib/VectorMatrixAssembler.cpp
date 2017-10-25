@@ -37,13 +37,13 @@ getPreviousLocalSolutionsOfCoupledProcesses(
             BaseLib::insertIfTypeIndexKeyUniqueElseError(
                 local_coupled_xs0, coupled_process_pair.first, local_coupled_x0,
                 "local_coupled_x0");
-        }
-        else
-        {
-            const std::vector<double> local_coupled_x0;
-            BaseLib::insertIfTypeIndexKeyUniqueElseError(
-                local_coupled_xs0, coupled_process_pair.first, local_coupled_x0,
-                "local_coupled_x0");
+        } else {
+          // TODO the local_coupled_x0 must be initialized with initial solution
+          // here. Now there will be a "out of range" error at access.
+          std::vector<double> local_coupled_x0;
+          BaseLib::insertIfTypeIndexKeyUniqueElseError(
+              local_coupled_xs0, coupled_process_pair.first, local_coupled_x0,
+              "local_coupled_x0");
         }
     }
     return local_coupled_xs0;
