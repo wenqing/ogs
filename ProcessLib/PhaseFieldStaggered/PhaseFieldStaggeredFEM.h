@@ -12,21 +12,23 @@
 #include <vector>
 
 #include "MaterialLib/SolidModels/PhaseFieldExtension.h"
-#include "PhaseFieldStaggeredProcessData.h"
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "NumLib/Extrapolation/ExtrapolatableElement.h"
 #include "NumLib/Fem/FiniteElement/TemplateIsoparametric.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
+#include "PhaseFieldStaggeredProcessData.h"
 #include "ProcessLib/LocalAssemblerInterface.h"
 #include "ProcessLib/LocalAssemblerTraits.h"
 #include "ProcessLib/Utils/InitShapeMatrices.h"
+#include "ProcessLib/StaggeredCouplingTerm.h"
 
+// For coupling
+#include "ProcessLib/PhaseFieldSmallDeformation/PhaseFieldSmallDeformationProcess.h"
 
 namespace ProcessLib
 {
 namespace PhaseFieldStaggered
 {
-
 const unsigned NUM_NODAL_DOF = 1;
 
 class PhaseFieldStaggeredLocalAssemblerInterface
@@ -53,12 +55,12 @@ public:
         std::vector<double>& /*cache*/) const = 0;
 };
 
-
-template <typename ShapeFunction, typename IntegrationMethod, unsigned GlobalDim>
-class PhaseFieldStaggeredLocalAssemblerData : public PhaseFieldStaggeredLocalAssemblerInterface
+template <typename ShapeFunction, typename IntegrationMethod,
+          unsigned GlobalDim>
+class PhaseFieldStaggeredLocalAssemblerData
+    : public PhaseFieldStaggeredLocalAssemblerInterface
 {
-    using ShapeMatricesType =
-        ShapeMatrixPolicyType<ShapeFunction, GlobalDim>;
+    using ShapeMatricesType = ShapeMatrixPolicyType<ShapeFunction, GlobalDim>;
 
     using ShapeMatrices = typename ShapeMatricesType::ShapeMatrices;
 
@@ -77,18 +79,18 @@ public:
         unsigned const integration_order,
         PhaseFieldStaggeredProcessData& process_data)
         : _element(element),
-		  _process_data(process_data),
+          _process_data(process_data),
           _integration_method(integration_order),
           _shape_matrices(initShapeMatrices<ShapeFunction, ShapeMatricesType,
                                             IntegrationMethod, GlobalDim>(
               element, is_axially_symmetric, _integration_method)),
-          _grad_damage(GlobalDim,std::vector<double>(_integration_method.getNumberOfPoints()))
+          _grad_damage(GlobalDim, std::vector<double>(
+                                      _integration_method.getNumberOfPoints()))
     {
         // This assertion is valid only if all nodal d.o.f. use the same shape
         // matrices.
         assert(local_matrix_size == ShapeFunction::NPOINTS * NUM_NODAL_DOF);
         (void)local_matrix_size;
-
     }
 
     void assemble(double const /*t*/, std::vector<double> const& /*local_x*/,
@@ -97,7 +99,8 @@ public:
                   std::vector<double>& /*local_rhs_data*/) override
     {
         OGS_FATAL(
-            "PhaseFieldStaggeredLocalAssemblerData: assembly without jacobian is not "
+            "PhaseFieldStaggeredLocalAssemblerData: assembly without jacobian "
+            "is not "
             "implemented.");
     }
 
@@ -176,9 +179,7 @@ public:
         return _grad_damage[0];
     }
 
-
 private:
-
     MeshLib::Element const& _element;
     PhaseFieldStaggeredProcessData const& _process_data;
 
@@ -188,7 +189,15 @@ private:
 
     std::vector<std::vector<double>> _grad_damage;
 
+    void assemblePhaseFieldStaggered(
+        SpatialPosition& pos, std::vector<double> const& local_x,
+        std::vector<double> const& local_u,
+        std::vector<double> const& strain_energy_tensile_ips,
+        std::vector<double>& local_M_data, std::vector<double>& local_K_data,
+        std::vector<double>& local_rhs_data);
 };
 
-}// namespace PhaseFieldStaggered
-}// namespace ProcessLib
+}  // namespace PhaseFieldStaggered
+}  // namespace ProcessLib
+
+#include "PhaseFieldStaggeredFEM-impl.h"

@@ -21,7 +21,6 @@ struct StaggeredCouplingTerm;
 
 namespace PhaseFieldSmallDeformation
 {
-
 template <int DisplacementDim>
 class PhaseFieldSmallDeformationLocalAssemblerInterface
     : public ProcessLib::LocalAssemblerInterface,
@@ -137,11 +136,10 @@ public:
 protected:
     // TODO: remove _coupling_term or move integration point data from local
     // assembler class to a new class to make local assembler unique for each
-    //process.
+    // process.
     /// Pointer that is set from a Process class.
     StaggeredCouplingTerm* _coupling_term;
 };
-
 
 }  // namespace PhaseFieldSmallDeformation
 }  // namespace ProcessLib

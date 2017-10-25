@@ -9,7 +9,6 @@
 
 #pragma once
 
-
 namespace ProcessLib
 {
 template <typename T>
@@ -17,13 +16,11 @@ struct Parameter;
 
 namespace PhaseFieldStaggered
 {
-
 struct PhaseFieldStaggeredProcessData
 {
-    PhaseFieldStaggeredProcessData(
-        Parameter<double> const& residual_stiffness_,
-        Parameter<double> const& crack_resistance_,
-        Parameter<double> const& crack_length_scale_)
+    PhaseFieldStaggeredProcessData(Parameter<double> const& residual_stiffness_,
+                                   Parameter<double> const& crack_resistance_,
+                                   Parameter<double> const& crack_length_scale_)
         : residual_stiffness(residual_stiffness_),
           crack_resistance(crack_resistance_),
           crack_length_scale(crack_length_scale_)
@@ -38,7 +35,8 @@ struct PhaseFieldStaggeredProcessData
     }
 
     //! Copies are forbidden.
-    PhaseFieldStaggeredProcessData(PhaseFieldStaggeredProcessData const&) = delete;
+    PhaseFieldStaggeredProcessData(PhaseFieldStaggeredProcessData const&) =
+        delete;
 
     //! Assignments are not needed.
     void operator=(PhaseFieldStaggeredProcessData const&) = delete;

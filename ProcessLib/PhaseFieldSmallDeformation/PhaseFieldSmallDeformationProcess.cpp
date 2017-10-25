@@ -14,9 +14,8 @@ namespace ProcessLib
 {
 namespace PhaseFieldSmallDeformation
 {
-
 template class PhaseFieldSmallDeformationProcess<2>;
 template class PhaseFieldSmallDeformationProcess<3>;
 
-}   // namespace PhaseFieldSmallDeformation
-}   // namespace ProcessLib
+}  // namespace PhaseFieldSmallDeformation
+}  // namespace ProcessLib

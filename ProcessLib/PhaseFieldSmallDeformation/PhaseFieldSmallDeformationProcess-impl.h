@@ -22,15 +22,18 @@ namespace ProcessLib
 namespace PhaseFieldSmallDeformation
 {
 template <int DisplacementDim>
-PhaseFieldSmallDeformationProcess<DisplacementDim>::PhaseFieldSmallDeformationProcess(
-    MeshLib::Mesh& mesh,
-    std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
-    std::vector<std::unique_ptr<ParameterBase>> const& parameters,
-    unsigned const integration_order,
-    std::vector<std::reference_wrapper<ProcessVariable>>&& process_variables,
-    PhaseFieldSmallDeformationProcessData<DisplacementDim>&& process_data,
-    SecondaryVariableCollection&& secondary_variables,
-    NumLib::NamedFunctionCaller&& named_function_caller)
+PhaseFieldSmallDeformationProcess<DisplacementDim>::
+    PhaseFieldSmallDeformationProcess(
+        MeshLib::Mesh& mesh,
+        std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&&
+            jacobian_assembler,
+        std::vector<std::unique_ptr<ParameterBase>> const& parameters,
+        unsigned const integration_order,
+        std::vector<std::reference_wrapper<ProcessVariable>>&&
+            process_variables,
+        PhaseFieldSmallDeformationProcessData<DisplacementDim>&& process_data,
+        SecondaryVariableCollection&& secondary_variables,
+        NumLib::NamedFunctionCaller&& named_function_caller)
     : Process(mesh, std::move(jacobian_assembler), parameters,
               integration_order, std::move(process_variables),
               std::move(secondary_variables), std::move(named_function_caller)),
@@ -47,15 +50,16 @@ bool PhaseFieldSmallDeformationProcess<DisplacementDim>::isLinear() const
 }
 
 template <int DisplacementDim>
-void PhaseFieldSmallDeformationProcess<DisplacementDim>::initializeConcreteProcess(
-    NumLib::LocalToGlobalIndexMap const& dof_table,
-    MeshLib::Mesh const& mesh,
-    unsigned const integration_order)
+void PhaseFieldSmallDeformationProcess<DisplacementDim>::
+    initializeConcreteProcess(NumLib::LocalToGlobalIndexMap const& dof_table,
+                              MeshLib::Mesh const& mesh,
+                              unsigned const integration_order)
 {
     ProcessLib::SmallDeformation::createLocalAssemblers<
         DisplacementDim, PhaseFieldSmallDeformationLocalAssembler>(
         mesh.getElements(), dof_table, _local_assemblers,
-        mesh.isAxiallySymmetric(), integration_order, _process_data,_coupling_term);
+        mesh.isAxiallySymmetric(), integration_order, _process_data,
+        _coupling_term);
 
     // TODO move the two data members somewhere else.
     // for extrapolation of secondary variables
@@ -202,9 +206,11 @@ void PhaseFieldSmallDeformationProcess<DisplacementDim>::initializeConcreteProce
 }
 
 template <int DisplacementDim>
-void PhaseFieldSmallDeformationProcess<DisplacementDim>::assembleConcreteProcess(
-    const double t, GlobalVector const& x, GlobalMatrix& M, GlobalMatrix& K,
-    GlobalVector& b)
+void PhaseFieldSmallDeformationProcess<
+    DisplacementDim>::assembleConcreteProcess(const double t,
+                                              GlobalVector const& x,
+                                              GlobalMatrix& M, GlobalMatrix& K,
+                                              GlobalVector& b)
 {
     DBUG("Assemble PhaseFieldSmallDeformationProcess.");
 
@@ -216,10 +222,12 @@ void PhaseFieldSmallDeformationProcess<DisplacementDim>::assembleConcreteProcess
 
 template <int DisplacementDim>
 void PhaseFieldSmallDeformationProcess<DisplacementDim>::
-    assembleWithJacobianConcreteProcess(
-        const double t, GlobalVector const& x, GlobalVector const& xdot,
-        const double dxdot_dx, const double dx_dx, GlobalMatrix& M,
-        GlobalMatrix& K, GlobalVector& b, GlobalMatrix& Jac)
+    assembleWithJacobianConcreteProcess(const double t, GlobalVector const& x,
+                                        GlobalVector const& xdot,
+                                        const double dxdot_dx,
+                                        const double dx_dx, GlobalMatrix& M,
+                                        GlobalMatrix& K, GlobalVector& b,
+                                        GlobalMatrix& Jac)
 {
     DBUG("AssembleWithJacobian PhaseFieldSmallDeformationProcess.");
 
@@ -235,8 +243,10 @@ void PhaseFieldSmallDeformationProcess<DisplacementDim>::
 }
 
 template <int DisplacementDim>
-void PhaseFieldSmallDeformationProcess<DisplacementDim>::preTimestepConcreteProcess(
-    GlobalVector const& x, double const t, double const dt)
+void PhaseFieldSmallDeformationProcess<
+    DisplacementDim>::preTimestepConcreteProcess(GlobalVector const& x,
+                                                 double const t,
+                                                 double const dt)
 {
     DBUG("PreTimestep PhaseFieldSmallDeformationProcess.");
 

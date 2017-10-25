@@ -21,7 +21,6 @@ namespace ProcessLib
 {
 namespace PhaseFieldStaggered
 {
-
 std::unique_ptr<Process> createPhaseFieldStaggeredProcess(
     MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
@@ -69,24 +68,21 @@ std::unique_ptr<Process> createPhaseFieldStaggeredProcess(
         "crack_length_scale", parameters, 1);
     DBUG("Use \'%s\' as crack length scale.", crack_length_scale.name.c_str());
 
-
     PhaseFieldStaggeredProcessData process_data{
         residual_stiffness, crack_resistance, crack_length_scale};
 
     SecondaryVariableCollection secondary_variables;
 
-    NumLib::NamedFunctionCaller named_function_caller(
-        {"PhaseField_damage"});
+    NumLib::NamedFunctionCaller named_function_caller({"PhaseField_damage"});
 
     ProcessLib::parseSecondaryVariables(config, secondary_variables,
                                         named_function_caller);
 
     return std::make_unique<PhaseFieldStaggeredProcess>(
-            mesh, std::move(jacobian_assembler), parameters, integration_order,
-            std::move(process_variables), std::move(process_data),
-            std::move(secondary_variables), std::move(named_function_caller));
+        mesh, std::move(jacobian_assembler), parameters, integration_order,
+        std::move(process_variables), std::move(process_data),
+        std::move(secondary_variables), std::move(named_function_caller));
 }
-
 
 }  // namespace PhaseFieldStaggered
 }  // namespace ProcessLib

@@ -36,7 +36,8 @@ struct PhaseFieldSmallDeformationProcessData
     {
     }
 
-    PhaseFieldSmallDeformationProcessData(PhaseFieldSmallDeformationProcessData&& other)
+    PhaseFieldSmallDeformationProcessData(
+        PhaseFieldSmallDeformationProcessData&& other)
         : material{std::move(other.material)},
           solid_density(other.solid_density),
           specific_body_force(other.specific_body_force),
@@ -46,7 +47,8 @@ struct PhaseFieldSmallDeformationProcessData
     }
 
     //! Copies are forbidden.
-    PhaseFieldSmallDeformationProcessData(PhaseFieldSmallDeformationProcessData const&) = delete;
+    PhaseFieldSmallDeformationProcessData(
+        PhaseFieldSmallDeformationProcessData const&) = delete;
 
     //! Assignments are not needed.
     void operator=(PhaseFieldSmallDeformationProcessData const&) = delete;

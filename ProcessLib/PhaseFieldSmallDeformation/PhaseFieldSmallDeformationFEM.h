@@ -15,9 +15,9 @@
 #include "MaterialLib/SolidModels/LinearElasticIsotropic.h"
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "NumLib/Extrapolation/ExtrapolatableElement.h"
-#include "NumLib/Function/Interpolation.h"
 #include "NumLib/Fem/FiniteElement/TemplateIsoparametric.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
+#include "NumLib/Function/Interpolation.h"
 #include "ProcessLib/Deformation/BMatrixPolicy.h"
 #include "ProcessLib/Deformation/LinearBMatrix.h"
 #include "ProcessLib/LocalAssemblerInterface.h"
@@ -27,12 +27,11 @@
 
 #include "LocalAssemblerInterface.h"
 #include "PhaseFieldSmallDeformationProcessData.h"
-#include "ProcessLib/StaggeredCouplingTerm.h"
 #include "ProcessLib/PhaseFieldStaggered/PhaseFieldStaggeredProcess.h"
+#include "ProcessLib/StaggeredCouplingTerm.h"
 
 namespace ProcessLib
 {
-
 namespace PhaseFieldSmallDeformation
 {
 template <typename BMatricesType, typename ShapeMatricesType,
@@ -48,7 +47,7 @@ struct IntegrationPointData final
     }
 
     typename BMatricesType::KelvinVectorType sigma_tensile, sigma_compressive,
-         sigma_real_prev, sigma_real;
+        sigma_real_prev, sigma_real;
     double strain_energy_tensile;
 
     typename BMatricesType::KelvinVectorType eps, eps_prev;
@@ -95,7 +94,6 @@ struct SecondaryData
     std::vector<ShapeMatrixType, Eigen::aligned_allocator<ShapeMatrixType>> N;
 };
 
-
 template <typename ShapeFunction, typename IntegrationMethod,
           int DisplacementDim>
 class PhaseFieldSmallDeformationLocalAssembler
@@ -115,9 +113,10 @@ public:
     using NodalDisplacementVectorType =
         typename BMatricesType::NodalForceVectorType;
 
-    PhaseFieldSmallDeformationLocalAssembler(PhaseFieldSmallDeformationLocalAssembler const&) =
-        delete;
-    PhaseFieldSmallDeformationLocalAssembler(PhaseFieldSmallDeformationLocalAssembler&&) = delete;
+    PhaseFieldSmallDeformationLocalAssembler(
+        PhaseFieldSmallDeformationLocalAssembler const&) = delete;
+    PhaseFieldSmallDeformationLocalAssembler(
+        PhaseFieldSmallDeformationLocalAssembler&&) = delete;
 
     PhaseFieldSmallDeformationLocalAssembler(
         MeshLib::Element const& e,
@@ -126,7 +125,8 @@ public:
         unsigned const integration_order,
         PhaseFieldSmallDeformationProcessData<DisplacementDim>& process_data,
         StaggeredCouplingTerm* coupling_term)
-        : PhaseFieldSmallDeformationLocalAssemblerInterface<DisplacementDim>(coupling_term),
+        : PhaseFieldSmallDeformationLocalAssemblerInterface<DisplacementDim>(
+              coupling_term),
           _process_data(process_data),
           _integration_method(integration_order),
           _element(e),
@@ -160,13 +160,17 @@ public:
                 KelvinVectorDimensions<DisplacementDim>::value);
             ip_data.eps.setZero(KelvinVectorDimensions<DisplacementDim>::value);
 
-            ip_data.C_tensile.setZero(KelvinVectorDimensions<DisplacementDim>::value,
-                                      KelvinVectorDimensions<DisplacementDim>::value);
-            ip_data.C_compressive.setZero(KelvinVectorDimensions<DisplacementDim>::value,
-                                          KelvinVectorDimensions<DisplacementDim>::value);
+            ip_data.C_tensile.setZero(
+                KelvinVectorDimensions<DisplacementDim>::value,
+                KelvinVectorDimensions<DisplacementDim>::value);
+            ip_data.C_compressive.setZero(
+                KelvinVectorDimensions<DisplacementDim>::value,
+                KelvinVectorDimensions<DisplacementDim>::value);
 
-            ip_data.sigma_tensile.setZero(KelvinVectorDimensions<DisplacementDim>::value);
-            ip_data.sigma_compressive.setZero( KelvinVectorDimensions<DisplacementDim>::value);
+            ip_data.sigma_tensile.setZero(
+                KelvinVectorDimensions<DisplacementDim>::value);
+            ip_data.sigma_compressive.setZero(
+                KelvinVectorDimensions<DisplacementDim>::value);
 
             ip_data.eps_prev.resize(
                 KelvinVectorDimensions<DisplacementDim>::value);
@@ -181,7 +185,8 @@ public:
                   std::vector<double>& /*local_b_data*/) override
     {
         OGS_FATAL(
-            "PhaseFieldSmallDeformationLocalAssembler: assembly without jacobian is not "
+            "PhaseFieldSmallDeformationLocalAssembler: assembly without "
+            "jacobian is not "
             "implemented.");
     }
 
@@ -192,34 +197,35 @@ public:
                                  std::vector<double>& local_b_data,
                                  LocalCouplingTerm const& coupled_term) override
     {
-
         const double dt = coupled_term.dt;
         for (auto const& coupled_process_pair : coupled_term.coupled_processes)
         {
-            if (coupled_process_pair.first ==
+            /*if (coupled_process_pair.first ==
                     std::type_index(
                         typeid(ProcessLib::PhaseFieldStaggered::PhaseFieldStaggeredProcess)))
-            /*{
+            {
                 const auto local_d =
                         coupled_term.local_coupled_xs.at(coupled_process_pair.first);
-                assembleWithCoupledPhaseFieldJacobian(t, dt, local_x, local_K_data,
+                assembleWithCoupledPhaseFieldJacobian(t, dt, local_x,
+            local_K_data,
                                                       local_b_data, local_d);
 
             }
-            else*/
+            else
             {
                 OGS_FATAL("This coupled process is not presented for "
                           "PhaseFieldSmallDeformation process");
-            }
+            }*/
         }
     }
 
-    void assembleWithCoupledPhaseFieldJacobian(double const t,
-                                               double const dt,
-                              std::vector<double> const& local_u,
-                              std::vector<double>& local_K_data,
-                              std::vector<double>& local_b_data,
-                              std::vector<double> const& local_d)
+    void assembleWithCoupledPhaseFieldJacobian(
+        double const t,
+        double const dt,
+        std::vector<double> const& local_u,
+        std::vector<double>& local_K_data,
+        std::vector<double>& local_b_data,
+        std::vector<double> const& local_d)
     {
         auto const local_matrix_size = local_u.size();
 
@@ -235,9 +241,10 @@ public:
         SpatialPosition x_position;
         x_position.setElementID(_element.getID());
 
- /*       auto u = Eigen::Map<typename ShapeMatricesType::template VectorType<
-            displacement_size> const>(local_x.data(),
-                                      displacement_size); */
+        /*       auto u = Eigen::Map<typename ShapeMatricesType::template
+           VectorType<
+                   displacement_size> const>(local_x.data(),
+                                             displacement_size); */
 
         for (unsigned ip = 0; ip < n_integration_points; ip++)
         {
@@ -267,7 +274,8 @@ public:
                                                      _is_axially_symmetric);
 
             // How to access to the material properties?
-            double const k = 1.e-8;//_process_data.residual_stiffness(t, x_position)[0];
+            double const k =
+                1.e-8;  //_process_data.residual_stiffness(t, x_position)[0];
             double d_ip = 0.;
             NumLib::shapeFunctionInterpolate(local_d, N, d_ip);
             double const degradation = d_ip * d_ip * (1 - k) + k;
@@ -296,12 +304,13 @@ public:
             auto const& C_tensile = _ip_data[ip].C_tensile;
             auto const& C_compressive = _ip_data[ip].C_compressive;
 
-
             auto const rho = _process_data.solid_density(t, x_position)[0];
             auto const& b = _process_data.specific_body_force;
             local_b.noalias() -=
                 (B.transpose() * sigma_real - N_u_op.transpose() * rho * b) * w;
-            local_K.noalias() += B.transpose() *(degradation * C_tensile + C_compressive )* B * w;
+            local_K.noalias() += B.transpose() *
+                                 (degradation * C_tensile + C_compressive) * B *
+                                 w;
         }
     }
 
@@ -425,15 +434,12 @@ public:
 
     std::vector<double> getIntPtStrainEnergyTensile() const override
     {
-
         auto const num_intpts = _ip_data.size();
         std::vector<double> st_result;
 
         for (unsigned ip = 0; ip < num_intpts; ++ip)
         {
-
-            st_result[ip] =  _ip_data[ip].strain_energy_tensile;
-
+            st_result[ip] = _ip_data[ip].strain_energy_tensile;
         }
 
         return st_result;

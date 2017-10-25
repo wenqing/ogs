@@ -41,7 +41,8 @@ std::unique_ptr<Process> createPhaseFieldSmallDeformationProcess(
     unsigned const integration_order,
     BaseLib::ConfigTree const& config);
 
-extern template std::unique_ptr<Process> createPhaseFieldSmallDeformationProcess<2>(
+extern template std::unique_ptr<Process>
+createPhaseFieldSmallDeformationProcess<2>(
     MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<ProcessVariable> const& variables,
@@ -49,7 +50,8 @@ extern template std::unique_ptr<Process> createPhaseFieldSmallDeformationProcess
     unsigned const integration_order,
     BaseLib::ConfigTree const& config);
 
-extern template std::unique_ptr<Process> createPhaseFieldSmallDeformationProcess<3>(
+extern template std::unique_ptr<Process>
+createPhaseFieldSmallDeformationProcess<3>(
     MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<ProcessVariable> const& variables,

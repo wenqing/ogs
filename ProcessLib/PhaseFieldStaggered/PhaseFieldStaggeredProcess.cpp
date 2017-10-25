@@ -31,9 +31,8 @@ PhaseFieldStaggeredProcess::PhaseFieldStaggeredProcess(
 {
 }
 
-void PhaseFieldStaggeredProcess::preTimestepConcreteProcess(GlobalVector const& x,
-                                            const double /*t*/,
-                                            const double /*delta_t*/)
+void PhaseFieldStaggeredProcess::preTimestepConcreteProcess(
+    GlobalVector const& x, const double /*t*/, const double /*delta_t*/)
 {
     if (!_x_previous_timestep)
     {
@@ -53,41 +52,40 @@ void PhaseFieldStaggeredProcess::initializeConcreteProcess(
     unsigned const integration_order)
 {
     ProcessLib::ProcessVariable const& pv = getProcessVariables()[0];
-    ProcessLib::createLocalAssemblers<PhaseFieldStaggeredLocalAssemblerData>
-            (
+    ProcessLib::createLocalAssemblers<PhaseFieldStaggeredLocalAssemblerData>(
         mesh.getDimension(), mesh.getElements(), dof_table,
         pv.getShapeFunctionOrder(), _local_assemblers,
         mesh.isAxiallySymmetric(), integration_order, _process_data);
 
-/*    _secondary_variables.addSecondaryVariable(
-        "grad_damage_x",
-        makeExtrapolator(
-            1, getExtrapolator(), _local_assemblers,
-            &PhaseFieldStaggeredLocalAssemblerInterface::getIntPtGradDamageX));
+    /*    _secondary_variables.addSecondaryVariable(
+            "grad_damage_x",
+            makeExtrapolator(
+                1, getExtrapolator(), _local_assemblers,
+                &PhaseFieldStaggeredLocalAssemblerInterface::getIntPtGradDamageX));
 
-    if (mesh.getDimension() > 1)
-    {
-        _secondary_variables.addSecondaryVariable(
-            "grad_damage_y",
-            makeExtrapolator(
-                1, getExtrapolator(), _local_assemblers,
-	            &PhaseFieldStaggeredLocalAssemblerInterface::getIntPtGradDamageY));
-    }
-    if (mesh.getDimension() > 2)
-    {
-        _secondary_variables.addSecondaryVariable(
-            "grad_damage_z",
-            makeExtrapolator(
-                1, getExtrapolator(), _local_assemblers,
-	            &PhaseFieldStaggeredLocalAssemblerInterface::getIntPtGradDamageZ));
-    }*/
+        if (mesh.getDimension() > 1)
+        {
+            _secondary_variables.addSecondaryVariable(
+                "grad_damage_y",
+                makeExtrapolator(
+                    1, getExtrapolator(), _local_assemblers,
+                    &PhaseFieldStaggeredLocalAssemblerInterface::getIntPtGradDamageY));
+        }
+        if (mesh.getDimension() > 2)
+        {
+            _secondary_variables.addSecondaryVariable(
+                "grad_damage_z",
+                makeExtrapolator(
+                    1, getExtrapolator(), _local_assemblers,
+                    &PhaseFieldStaggeredLocalAssemblerInterface::getIntPtGradDamageZ));
+        }*/
 }
 
 void PhaseFieldStaggeredProcess::assembleConcreteProcess(const double t,
-                                                    GlobalVector const& x,
-                                                    GlobalMatrix& M,
-                                                    GlobalMatrix& K,
-                                                    GlobalVector& b)
+                                                         GlobalVector const& x,
+                                                         GlobalMatrix& M,
+                                                         GlobalMatrix& K,
+                                                         GlobalVector& b)
 {
     DBUG("Assemble PhaseFieldStaggeredProcess.");
 
@@ -116,9 +114,8 @@ void PhaseFieldStaggeredProcess::computeSecondaryVariableConcrete(
 {
     DBUG("Compute damage gradient for PhaseFieldStaggeredProcess.");
     GlobalExecutor::executeMemberOnDereferenced(
-            &PhaseFieldStaggeredLocalAssemblerInterface::computeSecondaryVariable,
-            _local_assemblers, *_local_to_global_index_map, t, x,
-            _coupling_term);
+        &PhaseFieldStaggeredLocalAssemblerInterface::computeSecondaryVariable,
+        _local_assemblers, *_local_to_global_index_map, t, x, _coupling_term);
 }
 
 }  // namespace PhaseFieldStaggered

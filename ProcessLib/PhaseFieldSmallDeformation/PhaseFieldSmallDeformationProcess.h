@@ -10,9 +10,9 @@
 #pragma once
 
 #include "LocalAssemblerInterface.h"
-#include "ProcessLib/Process.h"
-#include "PhaseFieldSmallDeformationProcessData.h"
 #include "PhaseFieldSmallDeformationFEM.h"
+#include "PhaseFieldSmallDeformationProcessData.h"
+#include "ProcessLib/Process.h"
 
 namespace ProcessLib
 {
@@ -56,9 +56,9 @@ private:
         MeshLib::Mesh const& mesh,
         unsigned const integration_order) override;
 
-    void assembleConcreteProcess(
-        const double t, GlobalVector const& x, GlobalMatrix& M, GlobalMatrix& K,
-        GlobalVector& b) override;
+    void assembleConcreteProcess(const double t, GlobalVector const& x,
+                                 GlobalMatrix& M, GlobalMatrix& K,
+                                 GlobalVector& b) override;
 
     void assembleWithJacobianConcreteProcess(
         const double t, GlobalVector const& x, GlobalVector const& xdot,

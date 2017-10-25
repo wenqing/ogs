@@ -9,21 +9,20 @@
 
 #pragma once
 
-#include "PhaseFieldStaggeredFEM.h"
 #include "NumLib/Function/Interpolation.h"
+#include "PhaseFieldStaggeredFEM.h"
 
 namespace ProcessLib
 {
 namespace PhaseFieldStaggered
 {
-
-template <typename ShapeFunction, typename IntegrationMethod,
+/*template <typename ShapeFunction, typename IntegrationMethod,
           unsigned GlobalDim>
-
-void LocalAssembler<ShapeFunction, IntegrationMethod, GlobalDim>::
-     assemblePhaseField(SpatialPosition& pos,
+void PhaseFieldLocalAssemblerData<ShapeFunction, IntegrationMethod, GlobalDim>::
+     assemblePhaseFieldStaggered(SpatialPosition& pos,
         std::vector<double> const& local_x, std::vector<double> const& local_u,
-        std::vector<double> const& strain_energy_tensile_ips, std::vector<double>& local_M_data,
+        std::vector<double> const& strain_energy_tensile_ips,
+std::vector<double>& local_M_data,
         std::vector<double>& local_K_data, std::vector<double>& local_rhs_data)
 {
      auto const local_matrix_size = local_x.size();
@@ -68,51 +67,61 @@ void LocalAssembler<ShapeFunction, IntegrationMethod, GlobalDim>::
          double const ls = _process_data.crack_length_scale(t, x_position)[0];
 
          // phasefield equation.
-         local_K.noalias() += (gc * (0.5 * N.transpose() * N / ls + 2 * dNdx.transpose() * dNdx * ls )
-                           + N.transpose() * N * strain_energy_tensile_ips ) * w;
+         local_K.noalias() += (gc * (0.5 * N.transpose() * N / ls + 2 *
+dNdx.transpose() * dNdx * ls )
+                           + N.transpose() * N * strain_energy_tensile_ips ) *
+w;
 
          local_rhs.noalias() -= (2 * dNdx.transpose() * dNdx * ls* d +
-                            N.transpose() * d_ip * 2 * strain_energy_tensile_ips -
+                            N.transpose() * d_ip * 2 * strain_energy_tensile_ips
+-
                             N.transpose() * 0.5 * gc / ls * (1 - d_ip)) * w;
      }
+}*/
 
-}
-
-void PhaseFieldStaggeredLocalAssemblerData <typename ShapeFunction, typename IntegrationMethod,
-    unsigned GlobalDim>::assembleWithCoupledTerm(
-    double const t, std::vector<double> const& local_x,
-    std::vector<double>& local_M_data, std::vector<double>& local_K_data,
-    std::vector<double>& /*local_b_data*/,
-    LocalCouplingTerm const& coupled_term)
+template <typename ShapeFunction, typename IntegrationMethod,
+          unsigned GlobalDim>
+void PhaseFieldStaggeredLocalAssemblerData<
+    ShapeFunction, IntegrationMethod,
+    GlobalDim>::assembleWithCoupledTerm(double const t,
+                                        std::vector<double> const& local_x,
+                                        std::vector<double>& local_M_data,
+                                        std::vector<double>& local_K_data,
+                                        std::vector<double>& /*local_b_data*/,
+                                        LocalCouplingTerm const& coupled_term)
 {
-
     for (auto const& coupled_process_pair : coupled_term.coupled_processes)
     {
+#if 0
         if (coupled_process_pair.first ==
-                std::type_index(typeid(ProcessLib::PhaseFieldSmallDeformation)))
+            std::type_index(
+                typeid(ProcessLib::PhaseFieldSmallDeformation::
+                           PhaseFieldSmallDeformationProcess<GlobalDim>)))
         {
-            assert(dynamic_cast<ProcessLib::PhaseFieldSmallDeformation::PhaseFieldSmallDeformationProcess*>
-                   (&(coupled_process_pair.second)) != nullptr);
+            /*            assert(dynamic_cast<ProcessLib::PhaseFieldSmallDeformation::PhaseFieldSmallDeformationProcess*>
+                               (&(coupled_process_pair.second)) != nullptr);
 
-            auto const& pcs =
-                    static_cast<const ProcessLib::PhaseFieldSmallDeformation::PhaseFieldSmallDeformationProcess const&>
-                    (coupled_process_pair.second);
+                        auto const& pcs =
+                                static_cast<const
+               ProcessLib::PhaseFieldSmallDeformation::PhaseFieldSmallDeformationProcess
+               const&>
+                                (coupled_process_pair.second);
 
-            auto const strain_energy_tensile_ips = pcs.getIntStrainEnergyTensile(_element.getID());
+                        auto const strain_energy_tensile_ips =
+               pcs.getIntStrainEnergyTensile(_element.getID());
 
-            const auto local_u =
-                    coupled_term.local_coupled_xs.at(coupled_process_pair.first);
-            SpatialPosition pos;
-            pos.setElementID(_element.getID());
+                        const auto local_u =
+                                coupled_term.local_coupled_xs.at(coupled_process_pair.first);
+                        SpatialPosition pos;
+                        pos.setElementID(_element.getID());
 
-            assemblePhaseField(pos, local_x, local_u, strain_energy_tensile_ips, local_M_data, local_K_data,
-               local_rhs_data)
+                        assemblePhaseFieldStaggered(pos, local_x, local_u,
+               strain_energy_tensile_ips, local_M_data, local_K_data,
+                           local_rhs_data)
+                    }*/
         }
-
+#endif
     }
-
-}
-
 
 }  // namespace PhaseFieldStaggered
 }  // namespace ProcessLib

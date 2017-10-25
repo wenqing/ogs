@@ -11,9 +11,9 @@
 
 #include <cassert>
 
+#include "MaterialLib/SolidModels/CreateEhlers.h"
 #include "MaterialLib/SolidModels/CreateLinearElasticIsotropic.h"
 #include "MaterialLib/SolidModels/CreateLubby2.h"
-#include "MaterialLib/SolidModels/CreateEhlers.h"
 #include "ProcessLib/Utils/ParseSecondaryVariables.h"
 
 #include "PhaseFieldSmallDeformationProcess.h"
@@ -23,10 +23,8 @@ namespace ProcessLib
 {
 namespace PhaseFieldSmallDeformation
 {
-
 template <int DisplacementDim>
-std::unique_ptr<Process>
-createPhaseFieldSmallDeformationProcess(
+std::unique_ptr<Process> createPhaseFieldSmallDeformationProcess(
     MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<ProcessVariable> const& variables,
