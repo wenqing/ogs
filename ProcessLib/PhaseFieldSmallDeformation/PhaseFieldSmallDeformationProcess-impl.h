@@ -12,8 +12,8 @@
 #include <cassert>
 
 #include "BaseLib/Functional.h"
+#include "ProcessLib/SmallDeformation/CreateLocalAssemblers.h"
 #include "ProcessLib/Process.h"
-#include "ProcessLib/PhaseFieldSmallDeformation/CreateLocalAssemblers.h"
 
 #include "PhaseFieldSmallDeformationFEM.h"
 
@@ -52,7 +52,7 @@ void PhaseFieldSmallDeformationProcess<DisplacementDim>::initializeConcreteProce
     MeshLib::Mesh const& mesh,
     unsigned const integration_order)
 {
-    ProcessLib::PhaseFieldSmallDeformation::createLocalAssemblers<
+    ProcessLib::SmallDeformation::createLocalAssemblers<
         DisplacementDim, PhaseFieldSmallDeformationLocalAssembler>(
         mesh.getElements(), dof_table, _local_assemblers,
         mesh.isAxiallySymmetric(), integration_order, _process_data,_coupling_term);
