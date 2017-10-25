@@ -12,6 +12,7 @@
 #include <memory>
 #include <vector>
 
+#include "MaterialLib/SolidModels/PhaseFieldExtension.h"
 #include "MaterialLib/SolidModels/LinearElasticIsotropic.h"
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "NumLib/Extrapolation/ExtrapolatableElement.h"
@@ -27,7 +28,7 @@
 
 #include "LocalAssemblerInterface.h"
 #include "PhaseFieldSmallDeformationProcessData.h"
-#include "ProcessLib/PhaseFieldStaggered/PhaseFieldStaggeredProcess.h"
+// #include "ProcessLib/PhaseFieldStaggered/PhaseFieldStaggeredProcess.h"
 #include "ProcessLib/StaggeredCouplingTerm.h"
 
 namespace ProcessLib
