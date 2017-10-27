@@ -12,22 +12,6 @@
 #include <memory>
 #include "ProcessLib/Process.h"
 
-namespace BaseLib
-{
-class ConfigTree;
-}
-namespace MeshLib
-{
-class Mesh;
-}
-namespace ProcessLib
-{
-class AbstractJacobianAssembler;
-struct ParameterBase;
-class Process;
-class ProcessVariable;
-}
-
 namespace ProcessLib
 {
 namespace PhaseFieldStaggered
@@ -39,6 +23,5 @@ std::unique_ptr<Process> createPhaseFieldStaggeredProcess(
     std::vector<std::unique_ptr<ParameterBase>> const& parameters,
     unsigned const integration_order,
     BaseLib::ConfigTree const& config);
-
 }  // namespace PhaseFieldStaggered
 }  // namespace ProcessLib

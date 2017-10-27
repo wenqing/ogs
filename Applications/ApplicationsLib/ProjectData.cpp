@@ -43,7 +43,7 @@
 #include "ProcessLib/LIE/SmallDeformation/CreateSmallDeformationProcess.h"
 #include "ProcessLib/LiquidFlow/CreateLiquidFlowProcess.h"
 #include "ProcessLib/PhaseField/CreatePhaseFieldProcess.h"
-#include "ProcessLib/PhaseFieldSmallDeformation/CreatePhaseFieldSmallDeformationProcess.h"
+//#include "ProcessLib/PhaseFieldSmallDeformation/CreatePhaseFieldSmallDeformationProcess.h"
 #include "ProcessLib/PhaseFieldStaggered/CreatePhaseFieldStaggeredProcess.h"
 #include "ProcessLib/RichardsFlow/CreateRichardsFlowProcess.h"
 #include "ProcessLib/SmallDeformation/CreateSmallDeformationProcess.h"
@@ -427,18 +427,18 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config,
             switch (_mesh_vec[0]->getDimension())
             {
                 case 2:
-                    process = ProcessLib::PhaseFieldSmallDeformation::
+                    process = nullptr; /*ProcessLib::PhaseFieldSmallDeformation::
                         createPhaseFieldSmallDeformationProcess<2>(
                             *_mesh_vec[0], std::move(jacobian_assembler),
                             _process_variables, _parameters, integration_order,
-                            process_config);
+                            process_config);*/
                     break;
                 case 3:
-                    process = ProcessLib::PhaseFieldSmallDeformation::
+                    process = nullptr; /* ProcessLib::PhaseFieldSmallDeformation::
                         createPhaseFieldSmallDeformationProcess<3>(
                             *_mesh_vec[0], std::move(jacobian_assembler),
                             _process_variables, _parameters, integration_order,
-                            process_config);
+                            process_config); */
                     break;
                 default:
                     OGS_FATAL(
@@ -448,10 +448,10 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config,
         }
         else if (type == "PHASE_FIELD_STAGGERED")
         {
-            process = nullptr; /* ProcessLib::PhaseFieldStaggered::createPhaseFieldStaggeredProcess(
+            process = ProcessLib::PhaseFieldStaggered::createPhaseFieldStaggeredProcess(
                 *_mesh_vec[0], std::move(jacobian_assembler),
                 _process_variables, _parameters, integration_order,
-                process_config);*/
+                process_config);
         }
         else if (type == "SMALL_DEFORMATION")
         {
