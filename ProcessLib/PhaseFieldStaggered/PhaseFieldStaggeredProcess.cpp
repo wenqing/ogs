@@ -15,7 +15,7 @@
 
 #include "PhaseFieldStaggeredLocalAssembler.h"
 #include "PhaseFieldStaggeredProcessData.h"
-#include "ProcessLib/Utils/CreateLocalAssemblers.h"
+#include "CreateLocalAssemblers.h"
 
 namespace ProcessLib {
 namespace PhaseFieldStaggered {
@@ -39,7 +39,7 @@ void PhaseFieldStaggeredProcess::initializeConcreteProcess(
     NumLib::LocalToGlobalIndexMap const &dof_table, MeshLib::Mesh const &mesh,
     unsigned const integration_order) {
   ProcessLib::ProcessVariable const &pv = getProcessVariables()[0];
-  ProcessLib::createLocalAssemblers<PhaseFieldStaggeredLocalAssembler>(
+  createLocalAssemblers<PhaseFieldStaggeredLocalAssembler>(
       mesh.getDimension(), mesh.getElements(), dof_table,
       pv.getShapeFunctionOrder(), _local_assemblers, mesh.isAxiallySymmetric(),
       integration_order, _process_data, _coupling_term);

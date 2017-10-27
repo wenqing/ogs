@@ -18,8 +18,7 @@
 
 #include "ProcessLib/StaggeredCouplingTerm.h"
 
-//#include
-//"ProcessLib/PhaseFieldSmallDeformation/PhaseFieldSmallDeformationProcess.h"
+#include "ProcessLib/PhaseFieldSmallDeformation/PhaseFieldSmallDeformationProcess.h"
 
 namespace ProcessLib {
 namespace PhaseFieldStaggered {
@@ -37,36 +36,32 @@ void PhaseFieldStaggeredLocalAssembler<
   SpatialPosition pos;
   pos.setElementID(_element.getID());
 
-  const double dt = coupled_term.dt;
+  //const double dt = coupled_term.dt;
   for (auto const &coupled_process_pair : coupled_term.coupled_processes) {
-    /*   if (coupled_process_pair.first ==
-           std::type_index(
-               typeid(ProcessLib::PhaseFieldSmallDeformation::
-                          PhaseFieldSmallDeformationProcess<GlobalDim>))) {
-         assert(dynamic_cast<ProcessLib::PhaseFieldSmallDeformation::
-                                 PhaseFieldSmallDeformationProcess *>(
-                    &(coupled_process_pair.second)) != nullptr);
+    if (coupled_process_pair.first ==
+        std::type_index(
+            typeid(ProcessLib::PhaseFieldSmallDeformation::
+                       PhaseFieldSmallDeformationProcess<GlobalDim>))) {
+      auto const &pcs =
+          static_cast<ProcessLib::PhaseFieldSmallDeformation::
+                          PhaseFieldSmallDeformationProcess<GlobalDim> const &>(
+              coupled_process_pair.second);
 
-         auto const &pcs =
-             static_cast<const ProcessLib::PhaseFieldSmallDeformation::
-                             PhaseFieldSmallDeformationProcess const &>(
-                 coupled_process_pair.second);
+      auto const strain_energy_tensile_ips =
+          pcs.getIntStrainEnergyTensile(_element.getID());
 
-         auto const strain_energy_tensile_ips =
-             pcs.getIntStrainEnergyTensile(_element.getID());
+      const auto local_u =
+          coupled_term.local_coupled_xs.at(coupled_process_pair.first);
+      SpatialPosition pos;
+      pos.setElementID(_element.getID());
 
-         const auto local_u =
-             coupled_term.local_coupled_xs.at(coupled_process_pair.first);
-         SpatialPosition pos;
-         pos.setElementID(_element.getID());
-
-         assembleWithCoupledPhaseFieldStaggered(
-             local_x, local_u, strain_energy_tensile_ips, local_M_data,
-             local_K_data, local_rhs_data)
-       } else {
-         OGS_FATAL("This coupled process is not presented for "
-                   "PhaseFieldStaggered process");
-       }*/
+      assembleWithCoupledPhaseFieldStaggered(
+          t, local_x, local_u, strain_energy_tensile_ips, local_M_data,
+          local_K_data, local_b_data);
+    } else {
+      OGS_FATAL("This coupled process is not presented for "
+                "PhaseFieldStaggered process");
+    }
   }
 }
 
@@ -105,7 +100,7 @@ void PhaseFieldStaggeredLocalAssembler<ShapeFunction, IntegrationMethod,
   assert(strain_energy_tensile_ips.size() == n_integration_points);
 
   for (unsigned ip = 0; ip < n_integration_points; ip++) {
-    auto const &w = _integration_method.getWeightedPoint(ip);
+    auto const w = _integration_method.getWeightedPoint(ip).getWeight() * _shape_matrices[ip].detJ * _shape_matrices[ip].integralMeasure;
     auto const &N = _shape_matrices[ip].N;
     auto const &dNdx = _shape_matrices[ip].dNdx;
     double const d_ip = N.dot(d);
@@ -117,14 +112,14 @@ void PhaseFieldStaggeredLocalAssembler<ShapeFunction, IntegrationMethod,
     double const ls = _process_data.crack_length_scale(t, x_position)[0];
 
     // phasefield equation.
-    local_K.noalias() += (gc * (0.5 * N.transpose() * N / ls +
+   local_K.noalias() += (gc * (0.5 * N.transpose() * N / ls +
                                 2 * dNdx.transpose() * dNdx * ls) +
-                          N.transpose() * N * strain_energy_tensile_ips) *
+                          N.transpose() * N * strain_energy_tensile_ips[ip]) *
                          w;
 
-    local_rhs.noalias() -=
+     local_rhs.noalias() -=
         (2 * dNdx.transpose() * dNdx * ls * d +
-         N.transpose() * d_ip * 2 * strain_energy_tensile_ips -
+         N.transpose() * d_ip * 2 * strain_energy_tensile_ips[ip] -
          N.transpose() * 0.5 * gc / ls * (1 - d_ip)) *
         w;
   }
