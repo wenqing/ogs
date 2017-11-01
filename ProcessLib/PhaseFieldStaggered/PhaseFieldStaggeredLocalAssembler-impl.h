@@ -71,17 +71,15 @@ void PhaseFieldStaggeredLocalAssembler<ShapeFunction, IntegrationMethod,
                                        GlobalDim>::
     assembleWithCoupledPhaseFieldStaggered(
         double const t, std::vector<double> const &local_x,
-        std::vector<double> const &local_u,
+        std::vector<double> const & /*local_u*/,
         std::vector<double> const &strain_energy_tensile_ips,
-        std::vector<double> &local_M_data, std::vector<double> &local_K_data,
+        std::vector<double>& /*local_M_data*/, std::vector<double> &local_K_data,
         std::vector<double> &local_rhs_data) {
   auto const local_matrix_size = local_x.size();
   // This assertion is valid only if all nodal d.o.f. use the same shape
   // matrices.
   assert(local_matrix_size == ShapeFunction::NPOINTS * NUM_NODAL_DOF);
 
-  auto local_M = MathLib::createZeroedMatrix<NodalMatrixType>(
-      local_M_data, local_matrix_size, local_matrix_size);
   auto local_K = MathLib::createZeroedMatrix<NodalMatrixType>(
       local_K_data, local_matrix_size, local_matrix_size);
 
@@ -90,9 +88,6 @@ void PhaseFieldStaggeredLocalAssembler<ShapeFunction, IntegrationMethod,
 
   // Not sure about getting d
   auto d = MathLib::toVector<NodalVectorType>(local_x, local_matrix_size);
-
-  const auto local_u_vec =
-      MathLib::toVector<NodalVectorType>(local_u, local_matrix_size);
 
   unsigned const n_integration_points = _integration_method.getNumberOfPoints();
 
@@ -104,9 +99,6 @@ void PhaseFieldStaggeredLocalAssembler<ShapeFunction, IntegrationMethod,
     auto const &N = _shape_matrices[ip].N;
     auto const &dNdx = _shape_matrices[ip].dNdx;
     double const d_ip = N.dot(d);
-
-    auto const x_coord =
-        interpolateXCoordinate<ShapeFunction, ShapeMatricesType>(_element, N);
 
     double const gc = _process_data.crack_resistance(t, x_position)[0];
     double const ls = _process_data.crack_length_scale(t, x_position)[0];

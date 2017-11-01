@@ -58,8 +58,7 @@ void PhaseFieldSmallDeformationProcess<DisplacementDim>::
     ProcessLib::SmallDeformation::createLocalAssemblers<
         DisplacementDim, PhaseFieldSmallDeformationLocalAssembler>(
         mesh.getElements(), dof_table, _local_assemblers,
-        mesh.isAxiallySymmetric(), integration_order, _process_data,
-        _coupling_term);
+        mesh.isAxiallySymmetric(), integration_order, _process_data);
 
     // TODO move the two data members somewhere else.
     // for extrapolation of secondary variables

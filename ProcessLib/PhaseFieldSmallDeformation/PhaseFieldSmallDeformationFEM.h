@@ -29,7 +29,6 @@
 #include "LocalAssemblerInterface.h"
 #include "PhaseFieldSmallDeformationProcessData.h"
 #include "ProcessLib/PhaseFieldStaggered/PhaseFieldStaggeredProcess.h"
-#include "ProcessLib/StaggeredCouplingTerm.h"
 
 namespace ProcessLib {
 namespace PhaseFieldSmallDeformation {
@@ -67,7 +66,6 @@ struct IntegrationPointData final {
   template <typename DisplacementVectorType>
   void updateConstitutiveRelation(double const t,
                                   SpatialPosition const &x_position,
-                                  double const /*dt*/,
                                   DisplacementVectorType const & /*u*/,
                                   double const degradation) {
     static_cast<MaterialLib::Solids::PhaseFieldExtension<DisplacementDim> &>(
@@ -112,11 +110,8 @@ public:
   PhaseFieldSmallDeformationLocalAssembler(
       MeshLib::Element const &e, std::size_t const /*local_matrix_size*/,
       bool const is_axially_symmetric, unsigned const integration_order,
-      PhaseFieldSmallDeformationProcessData<DisplacementDim> &process_data,
-      StaggeredCouplingTerm *coupling_term)
-      : PhaseFieldSmallDeformationLocalAssemblerInterface<DisplacementDim>(
-            coupling_term),
-        _process_data(process_data), _integration_method(integration_order),
+      PhaseFieldSmallDeformationProcessData<DisplacementDim> &process_data)
+      : _process_data(process_data), _integration_method(integration_order),
         _element(e), _is_axially_symmetric(is_axially_symmetric) {
     unsigned const n_integration_points =
         _integration_method.getNumberOfPoints();
@@ -177,14 +172,13 @@ public:
                                std::vector<double> &local_K_data,
                                std::vector<double> &local_b_data,
                                LocalCouplingTerm const &coupled_term) override {
-    const double dt = coupled_term.dt;
     for (auto const &coupled_process_pair : coupled_term.coupled_processes) {
       if (coupled_process_pair.first ==
           std::type_index(typeid(
               ProcessLib::PhaseFieldStaggered::PhaseFieldStaggeredProcess))) {
         const auto local_d =
             coupled_term.local_coupled_xs.at(coupled_process_pair.first);
-        assembleWithCoupledPhaseFieldJacobian(t, dt, local_x, local_K_data,
+        assembleWithCoupledPhaseFieldJacobian(t, local_x, local_K_data,
                                               local_b_data, local_d);
 
       } else {
@@ -195,7 +189,7 @@ public:
   }
 
   void assembleWithCoupledPhaseFieldJacobian(
-      double const t, double const dt, std::vector<double> const &local_u,
+      double const t, std::vector<double> const &local_u,
       std::vector<double> &local_K_data, std::vector<double> &local_b_data,
       std::vector<double> const &local_d) {
     auto const local_matrix_size = local_u.size();
@@ -211,9 +205,6 @@ public:
 
     SpatialPosition x_position;
     x_position.setElementID(_element.getID());
-
-    auto u = Eigen::Map<typename ShapeMatricesType::template VectorType<
-        displacement_size> const>(local_u.data(), displacement_size);
 
     for (unsigned ip = 0; ip < n_integration_points; ip++) {
       x_position.setIntegrationPoint(ip);
@@ -240,12 +231,11 @@ public:
               dNdx, N, x_coord, _is_axially_symmetric);
 
       // How to access to the material properties?
-      double const k =
-          1.e-8; //_process_data.residual_stiffness(t, x_position)[0];
+      double const k =1.e-8; //_process_data.residual_stiffness(t, x_position)[0];
       double d_ip = 0.;
       NumLib::shapeFunctionInterpolate(local_d, N, d_ip);
       double const degradation = d_ip * d_ip * (1 - k) + k;
-      _ip_data[ip].updateConstitutiveRelation(t, x_position, dt, local_u,
+      _ip_data[ip].updateConstitutiveRelation(t, x_position, local_u,
                                               degradation);
 
       auto const &eps_prev = _ip_data[ip].eps_prev;

@@ -17,7 +17,6 @@
 
 namespace ProcessLib
 {
-struct StaggeredCouplingTerm;
 
 namespace PhaseFieldSmallDeformation
 {
@@ -27,17 +26,6 @@ class PhaseFieldSmallDeformationLocalAssemblerInterface
       public NumLib::ExtrapolatableElement
 {
 public:
-    PhaseFieldSmallDeformationLocalAssemblerInterface(
-        StaggeredCouplingTerm* const coupling_term)
-        : _coupling_term(coupling_term)
-    {
-    }
-
-    void setStaggeredCouplingTerm(std::size_t const /*mesh_item_id*/,
-                                  StaggeredCouplingTerm* const coupling_term)
-    {
-        _coupling_term = coupling_term;
-    }
     virtual std::vector<double> getIntPtStrainEnergyTensile() const = 0;
 
     virtual std::vector<double> const& getIntPtSigma(
@@ -133,12 +121,6 @@ public:
         DisplacementDim>::MaterialStateVariables const&
     getMaterialStateVariablesAt(unsigned /*integration_point*/) const = 0;
 
-protected:
-    // TODO: remove _coupling_term or move integration point data from local
-    // assembler class to a new class to make local assembler unique for each
-    // process.
-    /// Pointer that is set from a Process class.
-    StaggeredCouplingTerm* _coupling_term;
 };
 
 }  // namespace PhaseFieldSmallDeformation
