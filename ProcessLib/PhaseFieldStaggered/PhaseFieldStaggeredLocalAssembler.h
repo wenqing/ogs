@@ -125,6 +125,14 @@ public:
                                std::vector<double> &local_b_data,
                                LocalCouplingTerm const &coupled_term) override;
 
+  void assembleWithJacobianAndCoupling(
+      double const t, std::vector<double> const& local_x,
+      std::vector<double> const& local_xdot, const double dxdot_dx,
+      const double dx_dx, std::vector<double>& local_M_data,
+      std::vector<double>& local_K_data, std::vector<double>& local_b_data,
+      std::vector<double>& local_Jac_data,
+      LocalCouplingTerm const& coupling_term) override;
+
   Eigen::Map<const Eigen::RowVectorXd>
   getShapeMatrix(const unsigned integration_point) const override {
     auto const &N = _shape_matrices[integration_point].N;
@@ -163,9 +171,8 @@ private:
 
   void assembleWithCoupledPhaseFieldStaggered(
       double const t, std::vector<double> const &local_x,
-      std::vector<double> const &local_u,
       std::vector<double> const &strain_energy_tensile_ips,
-      std::vector<double> &local_M_data, std::vector<double> &local_K_data,
+      std::vector<double> &local_Jac_data,
       std::vector<double> &local_rhs_data);
 };
 

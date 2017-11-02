@@ -166,6 +166,31 @@ public:
               "implemented.");
   }
 
+
+  void assembleWithJacobianAndCoupling(
+      double const t, std::vector<double> const& local_x,
+      std::vector<double> const& /*local_xdot*/, const double /*dxdot_dx*/,
+      const double /*dx_dx*/, std::vector<double>& /*local_M_data*/,
+      std::vector<double>& /*local_K_data*/, std::vector<double>& local_b_data,
+      std::vector<double>& local_Jac_data,
+      LocalCouplingTerm const& coupled_term)override
+  {
+      for (auto const &coupled_process_pair : coupled_term.coupled_processes) {
+        if (coupled_process_pair.first ==
+            std::type_index(typeid(
+                ProcessLib::PhaseFieldStaggered::PhaseFieldStaggeredProcess))) {
+          const auto local_d =
+              coupled_term.local_coupled_xs.at(coupled_process_pair.first);
+          assembleWithCoupledPhaseFieldJacobian(t, local_x, local_Jac_data,
+                                                local_b_data, local_d);
+
+        } else {
+          OGS_FATAL("This coupled process is not presented for "
+                    "PhaseFieldSmallDeformation process");
+        }
+      }
+  }
+
   void assembleWithCoupledTerm(double const t,
                                std::vector<double> const &local_x,
                                std::vector<double> & /*local_M_data*/,
@@ -190,12 +215,12 @@ public:
 
   void assembleWithCoupledPhaseFieldJacobian(
       double const t, std::vector<double> const &local_u,
-      std::vector<double> &local_K_data, std::vector<double> &local_b_data,
+      std::vector<double> &local_Jac_data, std::vector<double> &local_b_data,
       std::vector<double> const &local_d) {
     auto const local_matrix_size = local_u.size();
 
-    auto local_K = MathLib::createZeroedMatrix<StiffnessMatrixType>(
-        local_K_data, local_matrix_size, local_matrix_size);
+    auto local_Jac = MathLib::createZeroedMatrix<StiffnessMatrixType>(
+        local_Jac_data, local_matrix_size, local_matrix_size);
 
     auto local_b = MathLib::createZeroedVector<NodalDisplacementVectorType>(
         local_b_data, local_matrix_size);
@@ -263,7 +288,7 @@ public:
       auto const &b = _process_data.specific_body_force;
       local_b.noalias() -=
           (B.transpose() * sigma_real - N_u_op.transpose() * rho * b) * w;
-      local_K.noalias() +=
+      local_Jac.noalias() +=
           B.transpose() * (degradation * C_tensile + C_compressive) * B * w;
     }
   }

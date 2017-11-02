@@ -127,6 +127,21 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
     }
 }
 
+//! Assembles the Jacobian, the matrices \f$M\f$ and \f$K\f$, and the vector
+//! \f$b\f$ with coupling.
+void CentralDifferencesJacobianAssembler::assembleWithJacobianAndCoupling(
+    LocalAssemblerInterface& /*local_assembler*/, double const /*t*/,
+    std::vector<double> const& /*local_x*/,
+    std::vector<double> const& /*local_xdot*/, const double /*dxdot_dx*/,
+    const double /*dx_dx*/, std::vector<double>& /*local_M_data*/,
+    std::vector<double>& /*local_K_data*/,
+    std::vector<double>& /*local_b_data*/,
+    std::vector<double>& /*local_Jac_data*/,
+    LocalCouplingTerm const& /*coupling_term*/)
+{
+    OGS_FATAL("Not impl.");
+}
+
 std::unique_ptr<CentralDifferencesJacobianAssembler>
 createCentralDifferencesJacobianAssembler(BaseLib::ConfigTree const& config)
 {

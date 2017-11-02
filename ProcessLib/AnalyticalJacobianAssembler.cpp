@@ -24,4 +24,19 @@ void AnalyticalJacobianAssembler::assembleWithJacobian(
                                          dx_dx, local_M_data, local_K_data,
                                          local_b_data, local_Jac_data);
 }
+
+
+void AnalyticalJacobianAssembler::assembleWithJacobianAndCoupling(
+    LocalAssemblerInterface& local_assembler, double const t,
+    std::vector<double> const& local_x,
+    std::vector<double> const& local_xdot, const double dxdot_dx,
+    const double dx_dx, std::vector<double>& local_M_data,
+    std::vector<double>& local_K_data,
+    std::vector<double>& local_b_data,
+    std::vector<double>& local_Jac_data,
+    LocalCouplingTerm const& coupling_term){
+    local_assembler.assembleWithJacobianAndCoupling(t, local_x, local_xdot, dxdot_dx,
+                                         dx_dx, local_M_data, local_K_data,
+                                         local_b_data, local_Jac_data, coupling_term);
+}
 }  // ProcessLib
