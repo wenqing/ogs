@@ -142,10 +142,14 @@ void VectorMatrixAssembler::assembleWithJacobian(
     }
     else
     {
+        auto const& coupled_pcs_dof_table =
+            coupling_term->coupled_processes.begin()->second.getDOFTable();
+        auto const indices_of_coupled_pcs =
+            NumLib::getIndices(mesh_item_id, coupled_pcs_dof_table);
         auto local_coupled_xs0 = getPreviousLocalSolutionsOfCoupledProcesses(
-            *coupling_term, indices);
+            *coupling_term, indices_of_coupled_pcs);
         auto local_coupled_xs = getCurrentLocalSolutionsOfCoupledProcesses(
-            coupling_term->coupled_xs, indices);
+            coupling_term->coupled_xs, indices_of_coupled_pcs);
         if (local_coupled_xs0.empty() || local_coupled_xs.empty())
         {
             _jacobian_assembler->assembleWithJacobian(
