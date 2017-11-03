@@ -63,10 +63,8 @@ struct IntegrationPointData final {
     material_state_variables->pushBackState();
   }
 
-  template <typename DisplacementVectorType>
   void updateConstitutiveRelation(double const t,
                                   SpatialPosition const &x_position,
-                                  DisplacementVectorType const & /*u*/,
                                   double const degradation) {
     static_cast<MaterialLib::Solids::PhaseFieldExtension<DisplacementDim> &>(
         solid_material)
@@ -260,7 +258,7 @@ public:
       double d_ip = 0.;
       NumLib::shapeFunctionInterpolate(local_d, N, d_ip);
       double const degradation = d_ip * d_ip * (1 - k) + k;
-      _ip_data[ip].updateConstitutiveRelation(t, x_position, local_u,
+      _ip_data[ip].updateConstitutiveRelation(t, x_position, /*local_u,*/
                                               degradation);
 
       auto const &eps_prev = _ip_data[ip].eps_prev;
@@ -395,6 +393,7 @@ public:
     auto const num_intpts = _ip_data.size();
     std::vector<double> st_result;
 
+    st_result.resize(num_intpts);
     for (unsigned ip = 0; ip < num_intpts; ++ip) {
       st_result[ip] = _ip_data[ip].strain_energy_tensile;
     }

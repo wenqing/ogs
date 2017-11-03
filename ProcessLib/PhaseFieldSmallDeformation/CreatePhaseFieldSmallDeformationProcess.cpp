@@ -15,6 +15,8 @@
 #include "MaterialLib/SolidModels/CreateLinearElasticIsotropic.h"
 #include "MaterialLib/SolidModels/CreateLubby2.h"
 #include "ProcessLib/Utils/ParseSecondaryVariables.h"
+#include "MaterialLib/SolidModels/LinearElasticIsotropicPhaseField.h"
+
 
 #include "PhaseFieldSmallDeformationProcess.h"
 #include "PhaseFieldSmallDeformationProcessData.h"
@@ -70,23 +72,15 @@ std::unique_ptr<Process> createPhaseFieldSmallDeformationProcess(
         //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION__constitutive_relation__type}
         constitutive_relation_config.peekConfigParameter<std::string>("type");
 
-    std::unique_ptr<MaterialLib::Solids::MechanicsBase<DisplacementDim>>
+    std::unique_ptr<MaterialLib::Solids::PhaseFieldExtension<DisplacementDim>>
         material = nullptr;
-    if (type == "Ehlers")
+    if (type == "LinearElasticIsotropic")
     {
-        material = MaterialLib::Solids::Ehlers::createEhlers<DisplacementDim>(
-            parameters, constitutive_relation_config);
-    }
-    else if (type == "LinearElasticIsotropic")
-    {
+        auto elastic_model = MaterialLib::Solids::createLinearElasticIsotropic<
+                DisplacementDim>(parameters, constitutive_relation_config);
         material =
-            MaterialLib::Solids::createLinearElasticIsotropic<DisplacementDim>(
-                parameters, constitutive_relation_config);
-    }
-    else if (type == "Lubby2")
-    {
-        material = MaterialLib::Solids::Lubby2::createLubby2<DisplacementDim>(
-            parameters, constitutive_relation_config);
+                std::make_unique<MaterialLib::Solids::LinearElasticIsotropicPhaseField<
+                DisplacementDim>>(std::move(elastic_model->getMaterialProperties()));
     }
     else
     {
