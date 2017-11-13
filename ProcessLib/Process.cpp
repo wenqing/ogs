@@ -172,8 +172,8 @@ void Process::assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
         (_coupled_solutions) ? _coupled_solutions->variable_id : 0;
     _boundary_conditions[pcs_id].applyNaturalBC(t, x, K, b);
 
-    const auto _source_terms_per_pcs = _source_terms[pcs_id];
-    for (auto const& st : _source_terms_per_pcs)
+    auto& source_terms_per_pcs = _source_terms[pcs_id];
+    for (auto& st : source_terms_per_pcs)
     {
         st->integrateNodalSourceTerm(t, b);
     }
@@ -192,7 +192,9 @@ void Process::assembleWithJacobian(const double t, GlobalVector const& x,
                                         Jac);
 
     // TODO apply BCs to Jacobian.
-    _boundary_conditions.applyNaturalBC(t, x, K, b);
+    const auto pcs_id =
+        (_coupled_solutions) ? _coupled_solutions->variable_id : 0;
+    _boundary_conditions[pcs_id].applyNaturalBC(t, x, K, b);
 }
 
 void Process::constructDofTable()
@@ -209,7 +211,7 @@ void Process::constructDofTable()
     if (_use_monolithic_scheme)
     {
         // Collect the mesh subsets in a vector.
-        for (ProcessVariable const& pv : _process_variables)
+        for (ProcessVariable const& pv : _process_variables[0])
         {
             std::generate_n(
                 std::back_inserter(all_mesh_subsets),
@@ -220,7 +222,7 @@ void Process::constructDofTable()
         }
 
         // Create a vector of the number of variable components
-        for (ProcessVariable const& pv : _process_variables)
+        for (ProcessVariable const& pv : _process_variables[0])
             vec_var_n_components.push_back(pv.getNumberOfComponents());
     }
     else  // for staggered scheme
@@ -232,14 +234,14 @@ void Process::constructDofTable()
         // Collect the mesh subsets in a vector.
         std::generate_n(
             std::back_inserter(all_mesh_subsets),
-            _process_variables[0].get().getNumberOfComponents(),
+            _process_variables[0][0].get().getNumberOfComponents(),
             [&]() {
                 return MeshLib::MeshSubsets{_mesh_subset_all_nodes.get()};
             });
 
         // Create a vector of the number of variable components.
         vec_var_n_components.push_back(
-            _process_variables[0].get().getNumberOfComponents());
+            _process_variables[0][0].get().getNumberOfComponents());
     }
     _local_to_global_index_map =
         std::make_unique<NumLib::LocalToGlobalIndexMap>(
