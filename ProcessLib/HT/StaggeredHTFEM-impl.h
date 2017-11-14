@@ -28,7 +28,7 @@ void StaggeredHTFEM<ShapeFunction, IntegrationMethod, GlobalDim>::
                             std::vector<double>& local_b_data,
                             LocalCoupledSolutions const& coupled_term)
 {
-    if (coupled_term.variable_id == 0)
+    if (coupled_term.process_id == 0)
     {
         assembleHeatTransportEquation(t, local_M_data, local_K_data,
                                       local_b_data, coupled_term);

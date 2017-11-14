@@ -167,7 +167,7 @@ void Process::assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
     assembleConcreteProcess(t, x, M, K, b);
 
     const auto pcs_id =
-        (_coupled_solutions) ? _coupled_solutions->variable_id : 0;
+        (_coupled_solutions) ? _coupled_solutions->process_id : 0;
     _boundary_conditions[pcs_id].applyNaturalBC(t, x, K, b);
 
     auto& source_terms_per_pcs = _source_terms[pcs_id];
@@ -191,7 +191,7 @@ void Process::assembleWithJacobian(const double t, GlobalVector const& x,
 
     // TODO apply BCs to Jacobian.
     const auto pcs_id =
-        (_coupled_solutions) ? _coupled_solutions->variable_id : 0;
+        (_coupled_solutions) ? _coupled_solutions->process_id : 0;
     _boundary_conditions[pcs_id].applyNaturalBC(t, x, K, b);
 }
 

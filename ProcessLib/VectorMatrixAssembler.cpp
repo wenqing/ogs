@@ -50,7 +50,7 @@ void VectorMatrixAssembler::assemble(
         auto local_coupled_xs = getCurrentLocalSolutions(*cpl_xs, indices);
 
         ProcessLib::LocalCoupledSolutions local_coupled_solutions(
-            cpl_xs->dt, cpl_xs->variable_id, std::move(local_coupled_xs0),
+            cpl_xs->dt, cpl_xs->process_id, std::move(local_coupled_xs0),
             std::move(local_coupled_xs));
 
         local_assembler.assembleWithCoupledTerm(t, _local_M_data, _local_K_data,
@@ -107,7 +107,7 @@ void VectorMatrixAssembler::assembleWithJacobian(
         auto local_coupled_xs = getCurrentLocalSolutions(*cpl_xs, indices);
 
         ProcessLib::LocalCoupledSolutions local_coupled_solutions(
-            cpl_xs->dt, cpl_xs->variable_id, std::move(local_coupled_xs0),
+            cpl_xs->dt, cpl_xs->process_id, std::move(local_coupled_xs0),
             std::move(local_coupled_xs));
 
         _jacobian_assembler->assembleWithJacobianAndCoupling(

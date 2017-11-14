@@ -84,7 +84,7 @@ void HTProcess::assembleConcreteProcess(const double t,
     }
     else
     {
-        if (_coupled_solutions->variable_id == 0)
+        if (_coupled_solutions->process_id == 0)
         {
             DBUG(
                 "Assemble the equations of heat transport process within "

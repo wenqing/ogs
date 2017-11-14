@@ -95,7 +95,7 @@ public:
     getKnownSolutions(double const t) const final
     {
         const auto pcs_id =
-            (_coupled_solutions) ? _coupled_solutions->variable_id : 0;
+            (_coupled_solutions) ? _coupled_solutions->process_id : 0;
         return _boundary_conditions[pcs_id].getKnownSolutions(t);
     }
 
@@ -109,7 +109,7 @@ public:
     getProcessVariables() const
     {
         const auto pcs_id =
-            (_coupled_solutions) ? _coupled_solutions->variable_id : 0;
+            (_coupled_solutions) ? _coupled_solutions->process_id : 0;
         return _process_variables[pcs_id];
     }
 
