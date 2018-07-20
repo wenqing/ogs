@@ -216,4 +216,19 @@ void uniquePushBack(Container& container,
         container.end())
         container.push_back(element);
 }
+
+/// Fast pow function. See
+/// <a
+/// href="https://stackoverflow.com/questions/16782746/what-is-faster-than-stdpow">What
+/// is faster than std::pow</a>
+inline double fastPow(double a, double b)
+{
+    union {
+        double d;
+        int x[2];
+    } u = {a};
+    u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
+    u.x[0] = 0;
+    return u.d;
+}
 }  // namespace BaseLib
