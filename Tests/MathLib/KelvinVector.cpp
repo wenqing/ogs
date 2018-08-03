@@ -8,7 +8,11 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdio> // for remove(..)
+#include <string>
+
 #include "MathLib/KelvinVector.h"
+#include "ProcessLib/Output/KelvinVectorBinaryIO.h"
 
 #include "Tests/AutoCheckTools.h"
 
@@ -172,4 +176,53 @@ TEST_F(MaterialLibSolidsKelvinVector6, DeviatoricSphericalProjections)
 
     // Test sum is identity.
     EXPECT_EQ(P_dev + P_sph, (Eigen::Matrix<double, size, size>::Identity()));
+}
+
+//
+// Test binary IO
+//
+TEST_F(MaterialLibSolidsKelvinVector4, SelfTestBinaryIO)
+{
+    auto f = [](KelvinVectorType<2> const& v) {
+        const std::string tempporary_file_name = "KevlinVector2.bin";
+        std::ofstream out(tempporary_file_name.data(),
+                          ios::out | ios::binary | ios::trunc);
+        ProcessLib::writeKelvinVectorBinary(out, v);
+        out.close();
+
+        KelvinVectorType<2> v_by_reading;
+        std::ifstream in(tempporary_file_name.data(),
+                         ios::in | std::ios::binary);
+        ProcessLib::readKelvinVectorBinary(in, v_by_reading);
+        in.close();
+
+        remove(tempporary_file_name.data());
+        return (v - v_by_reading).norm() <= std::numeric_limits<double>::min();
+    };
+
+    ac::check<KelvinVectorType<2>>(
+        f, 10, ac::make_arbitrary(kelvinVectorGenerator), gtest_reporter);
+}
+
+TEST_F(MaterialLibSolidsKelvinVector6, SelfTestBinaryIO)
+{
+    auto f = [](KelvinVectorType<3> const& v) {
+        const std::string tempporary_file_name = "KevlinVector2.bin";
+        std::ofstream out(tempporary_file_name.data(),
+                          ios::out | ios::binary | ios::trunc);
+        ProcessLib::writeKelvinVectorBinary(out, v);
+        out.close();
+
+        KelvinVectorType<3> v_by_reading;
+        std::ifstream in(tempporary_file_name.data(),
+                         ios::in | std::ios::binary);
+        ProcessLib::readKelvinVectorBinary(in, v_by_reading);
+        in.close();
+
+        remove(tempporary_file_name.data());
+        return (v - v_by_reading).norm() <= std::numeric_limits<double>::min();
+    };
+
+    ac::check<KelvinVectorType<3>>(
+        f, 10, ac::make_arbitrary(kelvinVectorGenerator), gtest_reporter);
 }
