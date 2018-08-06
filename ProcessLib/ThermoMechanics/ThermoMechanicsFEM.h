@@ -46,6 +46,7 @@ struct IntegrationPointData final
     {
     }
 
+    typename BMatricesType::KelvinVectorType sigma0;  /// Initial stress
     typename BMatricesType::KelvinVectorType sigma, sigma_prev;
     typename BMatricesType::KelvinVectorType eps;
     typename BMatricesType::KelvinVectorType eps_m, eps_m_prev;
@@ -139,6 +140,7 @@ public:
             static const int kelvin_vector_size =
                 MathLib::KelvinVector::KelvinVectorDimensions<
                     DisplacementDim>::value;
+            ip_data.sigma0.setZero(kelvin_vector_size);
             ip_data.sigma.setZero(kelvin_vector_size);
             ip_data.sigma_prev.setZero(kelvin_vector_size);
             ip_data.eps.setZero(kelvin_vector_size);
@@ -232,6 +234,7 @@ public:
                 typename BMatricesType::BMatrixType>(dNdx, N, x_coord,
                                                      _is_axially_symmetric);
 
+            auto const& sigma0 = _ip_data[ip].sigma0;
             auto& sigma = _ip_data[ip].sigma;
             auto const& sigma_prev = _ip_data[ip].sigma_prev;
             auto& eps = _ip_data[ip].eps;
@@ -300,8 +303,9 @@ public:
             auto const& b = _process_data.specific_body_force;
             local_rhs
                 .template block<displacement_size, 1>(displacement_index, 0)
-                .noalias() -=
-                (B.transpose() * sigma - N_u.transpose() * rho_s * b) * w;
+                .noalias() -= (B.transpose() * (sigma - sigma0) -
+                               N_u.transpose() * rho_s * b) *
+                              w;
 
             //
             // displacement equation, temperature part
@@ -519,7 +523,11 @@ public:
 
         for (unsigned ip = 0; ip < n_integration_points; ip++)
         {
-            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].sigma);
+            auto& sigma = _ip_data[ip].sigma;
+            auto& sigma0 = _ip_data[ip].sigma0;
+            ProcessLib::readKelvinVectorBinary(in, sigma);
+            sigma0.noalias() = sigma;
+
             ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].sigma_prev);
             ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].eps);
             ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].eps_m);

@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <fstream>
 #include <tuple>
 
 #include "NumLib/NamedFunctionCaller.h"
@@ -224,6 +225,14 @@ private:
         return NumLib::IterationResult::SUCCESS;
     }
 
+    /// Writes the integration point data into a binary file. It is used
+    /// for a restarted computation, which reads the data in the binary file to
+    /// initialize the integration point data.
+    virtual void writeIntegrationPointDataBinary(std::ofstream& /*out*/) {}
+    /// Reads the integration point data into a binary file in a restarted
+    /// computation.
+    virtual void readIntegrationPointDataBinary(std::ifstream& /*in*/) {}
+    
 protected:
     virtual void constructDofTable();
 

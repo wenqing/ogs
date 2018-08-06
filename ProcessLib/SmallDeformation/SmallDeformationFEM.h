@@ -46,6 +46,7 @@ struct IntegrationPointData final
     {
     }
 
+    typename BMatricesType::KelvinVectorType sigma0;  /// Initial stress
     typename BMatricesType::KelvinVectorType sigma, sigma_prev;
     typename BMatricesType::KelvinVectorType eps, eps_prev;
     double free_energy_density = 0;
@@ -142,6 +143,7 @@ public:
                 MathLib::KelvinVector::KelvinVectorDimensions<
                     DisplacementDim>::value;
             // Initialize current time step values
+            ip_data.sigma0.setZero(kelvin_vector_size);
             ip_data.sigma.setZero(kelvin_vector_size);
             ip_data.eps.setZero(kelvin_vector_size);
 
@@ -241,6 +243,7 @@ public:
 
             auto& eps = _ip_data[ip].eps;
             auto& sigma = _ip_data[ip].sigma;
+            auto const& sigma0 = _ip_data[ip].sigma0;
             auto& state = _ip_data[ip].material_state_variables;
 
             eps.noalias() =
@@ -260,8 +263,10 @@ public:
 
             auto const rho = _process_data.solid_density(t, x_position)[0];
             auto const& b = _process_data.specific_body_force;
-            local_b.noalias() -=
-                (B.transpose() * sigma - N_u_op.transpose() * rho * b) * w;
+            local_b.noalias() -= (B.transpose() * (sigma - sigma0) -
+                                  N_u_op.transpose() * rho * b) *
+                                 w;
+
             local_Jac.noalias() += B.transpose() * C * B * w;
         }
     }
@@ -484,7 +489,11 @@ public:
 
         for (unsigned ip = 0; ip < n_integration_points; ip++)
         {
-            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].sigma);
+            auto& sigma = _ip_data[ip].sigma;
+            auto& sigma0 = _ip_data[ip].sigma0;
+            ProcessLib::readKelvinVectorBinary(in, sigma);
+            sigma0.noalias() = sigma;
+
             ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].sigma_prev);
             ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].eps);
             ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].eps_prev);
