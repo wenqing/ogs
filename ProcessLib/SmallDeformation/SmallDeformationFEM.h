@@ -23,6 +23,7 @@
 #include "ProcessLib/Deformation/LinearBMatrix.h"
 #include "ProcessLib/LocalAssemblerInterface.h"
 #include "ProcessLib/LocalAssemblerTraits.h"
+#include "ProcessLib/Output/KelvinVectorBinaryIO.h"
 #include "ProcessLib/Parameter/Parameter.h"
 #include "ProcessLib/Utils/InitShapeMatrices.h"
 
@@ -448,6 +449,46 @@ public:
     getMaterialStateVariablesAt(unsigned integration_point) const override
     {
         return *_ip_data[integration_point].material_state_variables;
+    }
+
+    void writeIntegrationPointDataBinary(std::size_t const mesh_item_id,
+                                         std::ofstream& out) override
+    {
+        static const int kelvin_vector_size =
+            MathLib::KelvinVector::KelvinVectorDimensions<
+                DisplacementDim>::value;
+        unsigned const n_integration_points =
+            _integration_method.getNumberOfPoints();
+        this->writeIntegrationPointDataBinaryInfo(
+            mesh_item_id, kelvin_vector_size, n_integration_points, out);
+
+        for (unsigned ip = 0; ip < n_integration_points; ip++)
+        {
+            ProcessLib::writeKelvinVectorBinary(out, _ip_data[ip].sigma);
+            ProcessLib::writeKelvinVectorBinary(out, _ip_data[ip].sigma_prev);
+            ProcessLib::writeKelvinVectorBinary(out, _ip_data[ip].eps);
+            ProcessLib::writeKelvinVectorBinary(out, _ip_data[ip].eps_prev);
+        }
+    }
+
+    void readIntegrationPointDataBinary(std::size_t const mesh_item_id,
+                                        std::ifstream& in) override
+    {
+        static const int kelvin_vector_size =
+            MathLib::KelvinVector::KelvinVectorDimensions<
+                DisplacementDim>::value;
+        unsigned const n_integration_points =
+            _integration_method.getNumberOfPoints();
+        this->checkIntegrationPointDataBinary(mesh_item_id, kelvin_vector_size,
+                                              n_integration_points, in);
+
+        for (unsigned ip = 0; ip < n_integration_points; ip++)
+        {
+            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].sigma);
+            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].sigma_prev);
+            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].eps);
+            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].eps_prev);
+        }
     }
 
 private:

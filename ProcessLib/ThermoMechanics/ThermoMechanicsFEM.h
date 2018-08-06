@@ -9,8 +9,11 @@
 
 #pragma once
 
+#include <fstream>
 #include <memory>
 #include <vector>
+
+#include "BaseLib/Error.h"
 
 #include "MaterialLib/SolidModels/MechanicsBase.h"
 #include "MathLib/KelvinVector.h"
@@ -20,6 +23,7 @@
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
 #include "ProcessLib/Deformation/BMatrixPolicy.h"
 #include "ProcessLib/Deformation/LinearBMatrix.h"
+#include "ProcessLib/Output/KelvinVectorBinaryIO.h"
 #include "ProcessLib/Parameter/Parameter.h"
 #include "ProcessLib/Utils/InitShapeMatrices.h"
 
@@ -291,7 +295,7 @@ public:
             // see reference solid density description for details.
             auto& rho_s = _ip_data[ip].solid_density;
             rho_s = _ip_data[ip].solid_density_prev /
-                                 (1 + 3 * linear_thermal_strain_increment);
+                    (1 + 3 * linear_thermal_strain_increment);
 
             auto const& b = _process_data.specific_body_force;
             local_rhs
@@ -475,6 +479,55 @@ public:
     {
         assert(DisplacementDim == 3);
         return getIntPtEpsilon(cache, 5);
+    }
+
+    void writeIntegrationPointDataBinary(std::size_t const mesh_item_id,
+                                         std::ofstream& out) override
+    {
+        static const int kelvin_vector_size =
+            MathLib::KelvinVector::KelvinVectorDimensions<
+                DisplacementDim>::value;
+        unsigned const n_integration_points =
+            _integration_method.getNumberOfPoints();
+        writeIntegrationPointDataBinaryInfo(mesh_item_id, kelvin_vector_size,
+                                            n_integration_points, out);
+
+        for (unsigned ip = 0; ip < n_integration_points; ip++)
+        {
+            ProcessLib::writeKelvinVectorBinary(out, _ip_data[ip].sigma);
+            ProcessLib::writeKelvinVectorBinary(out, _ip_data[ip].sigma_prev);
+            ProcessLib::writeKelvinVectorBinary(out, _ip_data[ip].eps);
+            ProcessLib::writeKelvinVectorBinary(out, _ip_data[ip].eps_m);
+            ProcessLib::writeKelvinVectorBinary(out, _ip_data[ip].eps_m_prev);
+
+            out.write((char*)&(_ip_data[ip].solid_density), sizeof(double));
+            out.write((char*)&(_ip_data[ip].solid_density_prev),
+                      sizeof(double));
+        }
+    }
+
+    void readIntegrationPointDataBinary(std::size_t const mesh_item_id,
+                                        std::ifstream& in) override
+    {
+        static const int kelvin_vector_size =
+            MathLib::KelvinVector::KelvinVectorDimensions<
+                DisplacementDim>::value;
+        unsigned const n_integration_points =
+            _integration_method.getNumberOfPoints();
+        checkIntegrationPointDataBinary(mesh_item_id, kelvin_vector_size,
+                                            n_integration_points, in);
+
+        for (unsigned ip = 0; ip < n_integration_points; ip++)
+        {
+            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].sigma);
+            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].sigma_prev);
+            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].eps);
+            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].eps_m);
+            ProcessLib::readKelvinVectorBinary(in, _ip_data[ip].eps_m_prev);
+
+            in.read((char*)&(_ip_data[ip].solid_density), sizeof(double));
+            in.read((char*)&(_ip_data[ip].solid_density_prev), sizeof(double));
+        }
     }
 
 private:

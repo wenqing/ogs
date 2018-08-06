@@ -9,6 +9,9 @@
 
 #pragma once
 
+#include <fstream>
+#include <string>
+
 #include <Eigen/Dense>
 
 #include "NumLib/NumericsConfig.h"
@@ -21,6 +24,16 @@ class LocalToGlobalIndexMap;
 
 namespace ProcessLib
 {
+static const std::string ErrorMessageInReadingIntegrationPointData =
+    "The number of integration points read from the binary file "
+    "does not match that is determined from the project file for a "
+    "restarted computation. Please make sure for a restarted  "
+    "computation that:\n"
+    "\t1. the order of numerical integration is not touched from "
+    "the preceding computation.\n"
+    "\t2. the mesh file is not changed from the preceding "
+    "computation.";
+
 struct CoupledSolutionsForStaggeredScheme;
 struct LocalCoupledSolutions;
 
@@ -95,14 +108,27 @@ public:
         return Eigen::Vector3d{};
     }
 
-private:
+    /// Writes the integration point data into a binary file. It is used
+    /// for a restarted computation, which reads the data in the binary file to
+    /// initialize the integration point data.
+    virtual void writeIntegrationPointDataBinary(
+        std::size_t const /*mesh_item_id*/, std::ofstream& /*out*/)
+    {
+    }
+    /// Reads the integration point data into a binary file in a restarted
+    /// computation.
+    virtual void readIntegrationPointDataBinary(
+        std::size_t const /*mesh_item_id*/, std::ifstream& /*in*/)
+    {
+    }
+
+protected:
     virtual void preTimestepConcrete(std::vector<double> const& /*local_x*/,
                                      double const /*t*/, double const /*dt*/)
     {
     }
 
     virtual void postTimestepConcrete(std::vector<double> const& /*local_x*/) {}
-
     virtual void postNonLinearSolverConcrete(
         std::vector<double> const& /*local_x*/, double const /*t*/,
         bool const /*use_monolithic_scheme*/)
@@ -119,6 +145,14 @@ private:
         /*coupled_local_solutions*/)
     {
     }
+
+    void writeIntegrationPointDataBinaryInfo(
+        std::size_t const mesh_item_id, int const local_vector_size,
+        unsigned const integration_point_number, std::ofstream& out);
+
+    void checkIntegrationPointDataBinary(
+        std::size_t const mesh_item_id, int const local_vector_size,
+        unsigned const integration_point_number, std::ifstream& in);
 };
 
 }  // namespace ProcessLib
