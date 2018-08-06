@@ -152,7 +152,7 @@ void ThermoMechanicsProcess<DisplacementDim>::assembleConcreteProcess(
     DBUG("Assemble ThermoMechanicsProcess.");
 
     std::vector<std::reference_wrapper<NumLib::LocalToGlobalIndexMap>>
-       dof_table = {std::ref(*_local_to_global_index_map)};
+        dof_table = {std::ref(*_local_to_global_index_map)};
     // Call global assembler for each local assembly item.
     GlobalExecutor::executeMemberDereferenced(
         _global_assembler, &VectorMatrixAssembler::assemble, _local_assemblers,
@@ -171,12 +171,12 @@ void ThermoMechanicsProcess<DisplacementDim>::
     DBUG("AssembleJacobian ThermoMechanicsProcess.");
 
     std::vector<std::reference_wrapper<NumLib::LocalToGlobalIndexMap>>
-       dof_table = {std::ref(*_local_to_global_index_map)};
+        dof_table = {std::ref(*_local_to_global_index_map)};
     // Call global assembler for each local assembly item.
     GlobalExecutor::executeMemberDereferenced(
         _global_assembler, &VectorMatrixAssembler::assembleWithJacobian,
-        _local_assemblers, dof_table, t, x, xdot, dxdot_dx,
-        dx_dx, M, K, b, Jac, _coupled_solutions);
+        _local_assemblers, dof_table, t, x, xdot, dxdot_dx, dx_dx, M, K, b, Jac,
+        _coupled_solutions);
 }
 
 template <int DisplacementDim>
@@ -204,6 +204,30 @@ void ThermoMechanicsProcess<DisplacementDim>::postTimestepConcreteProcess(
     GlobalExecutor::executeMemberOnDereferenced(
         &ThermoMechanicsLocalAssemblerInterface::postTimestep,
         _local_assemblers, *_local_to_global_index_map, x);
+}
+
+template <int DisplacementDim>
+void ThermoMechanicsProcess<DisplacementDim>::writeIntegrationPointDataBinary(
+    std::ofstream& out)
+{
+    DBUG("Writes integration point data to a binary file.");
+
+    GlobalExecutor::executeMemberOnDereferenced(
+        &ThermoMechanicsLocalAssemblerInterface::
+            writeIntegrationPointDataBinary,
+        _local_assemblers, out);
+}
+
+template <int DisplacementDim>
+void ThermoMechanicsProcess<DisplacementDim>::readIntegrationPointDataBinary(
+    std::ifstream& in)
+{
+    DBUG("Reads integration point data.");
+
+    GlobalExecutor::executeMemberOnDereferenced(
+        &ThermoMechanicsLocalAssemblerInterface::
+            readIntegrationPointDataBinary,
+        _local_assemblers, in);
 }
 
 template class ThermoMechanicsProcess<2>;

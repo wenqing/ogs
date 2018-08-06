@@ -65,6 +65,10 @@ private:
                                      const double delta_t,
                                      int const process_id) override;
 
+    void writeIntegrationPointDataBinary(std::ofstream& out) override;
+
+    void readIntegrationPointDataBinary(std::ifstream& in) override;
+
 private:
     std::vector<MeshLib::Node*> _base_nodes;
     std::unique_ptr<MeshLib::MeshSubset const> _mesh_subset_base_nodes;

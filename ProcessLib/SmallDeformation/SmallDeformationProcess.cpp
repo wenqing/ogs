@@ -283,6 +283,28 @@ void SmallDeformationProcess<DisplacementDim>::postTimestepConcreteProcess(
     material_forces->copyValues(*_material_forces);
 }
 
+template <int DisplacementDim>
+void SmallDeformationProcess<DisplacementDim>::writeIntegrationPointDataBinary(
+    std::ofstream& out)
+{
+    DBUG("Writes integration point data to a binary file.");
+
+    GlobalExecutor::executeMemberOnDereferenced(
+        &LocalAssemblerInterface::writeIntegrationPointDataBinary,
+        _local_assemblers, out);
+}
+
+template <int DisplacementDim>
+void SmallDeformationProcess<DisplacementDim>::readIntegrationPointDataBinary(
+    std::ifstream& in)
+{
+    DBUG("Reads integration point data.");
+
+    GlobalExecutor::executeMemberOnDereferenced(
+        &LocalAssemblerInterface::readIntegrationPointDataBinary,
+        _local_assemblers, in);
+}
+
 template class SmallDeformationProcess<2>;
 template class SmallDeformationProcess<3>;
 

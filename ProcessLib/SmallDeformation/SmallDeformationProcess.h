@@ -99,6 +99,10 @@ private:
                                      const double delta_t,
                                      int const process_id) override;
 
+    void writeIntegrationPointDataBinary(std::ofstream& out) override;
+
+    void readIntegrationPointDataBinary(std::ifstream& in) override;
+
 private:
     SmallDeformationProcessData<DisplacementDim> _process_data;
 
