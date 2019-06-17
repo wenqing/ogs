@@ -500,6 +500,7 @@ void PhaseFieldLocalAssembler<ShapeFunction, IntegrationMethod,
         {
             pressure_work +=
                 pressure_ip * (N_u * u_corrected).dot(dNdx * d) * w;
+        }
     }
 }
 }  // namespace PhaseField
