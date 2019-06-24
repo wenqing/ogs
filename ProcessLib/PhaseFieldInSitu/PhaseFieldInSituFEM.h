@@ -18,9 +18,9 @@
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "NumLib/Fem/FiniteElement/TemplateIsoparametric.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
+#include "ParameterLib/SpatialPosition.h"
 #include "ProcessLib/Deformation/BMatrixPolicy.h"
 #include "ProcessLib/Deformation/LinearBMatrix.h"
-#include "ParameterLib/SpatialPosition.h"
 #include "ProcessLib/Utils/InitShapeMatrices.h"
 
 #include "LocalAssemblerInterface.h"
@@ -70,10 +70,12 @@ struct IntegrationPointData final
     }
 
     template <typename DisplacementVectorType>
-    void updateConstitutiveRelation(double const t, ParameterLib::SpatialPosition const& x,
+    void updateConstitutiveRelation(double const t,
+                                    ParameterLib::SpatialPosition const& x,
                                     double const /*dt*/,
                                     DisplacementVectorType const& /*u*/,
-                                    double const degradation, int const split)
+                                    double const degradation, int const split,
+                                    double reg_param)
     {
         auto linear_elastic_mp =
             static_cast<MaterialLib::Solids::LinearElasticIsotropic<
@@ -82,6 +84,7 @@ struct IntegrationPointData final
 
         auto const bulk_modulus = linear_elastic_mp.bulk_modulus(t, x);
         auto const mu = linear_elastic_mp.mu(t, x);
+        auto const lambda = linear_elastic_mp.lambda(t, x);
 
         if (split == 0)
         {
@@ -98,7 +101,15 @@ struct IntegrationPointData final
             std::tie(sigma, sigma_tensile, C_tensile, C_compressive,
                      strain_energy_tensile, elastic_energy) =
                 MaterialLib::Solids::Phasefield::calculateDegradedStressAmor<
-                    DisplacementDim>(degradation, bulk_modulus, mu, eps);
+                    DisplacementDim>(degradation, bulk_modulus, mu, eps,
+                                     reg_param);
+        }
+        else if (split == 2)
+        {
+            std::tie(sigma, sigma_tensile, C_tensile, C_compressive,
+                     strain_energy_tensile, elastic_energy) =
+                MaterialLib::Solids::Phasefield::calculateDegradedStressMiehe<
+                    DisplacementDim>(degradation, lambda, mu, eps, reg_param);
         }
     }
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;

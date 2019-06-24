@@ -48,7 +48,6 @@ struct IntegrationPointData final
 
     typename BMatricesType::KelvinVectorType eps, eps_prev;
 
-
     MaterialLib::Solids::MechanicsBase<DisplacementDim> const& solid_material;
     std::unique_ptr<typename MaterialLib::Solids::MechanicsBase<
         DisplacementDim>::MaterialStateVariables>
@@ -75,7 +74,8 @@ struct IntegrationPointData final
                                     ParameterLib::SpatialPosition const& x,
                                     double const /*dt*/,
                                     DisplacementVectorType const& /*u*/,
-                                    double const degradation, int const split)
+                                    double const degradation, int const split,
+                                    double const reg_param)
     {
         auto linear_elastic_mp =
             static_cast<MaterialLib::Solids::LinearElasticIsotropic<
@@ -84,6 +84,7 @@ struct IntegrationPointData final
 
         auto const bulk_modulus = linear_elastic_mp.bulk_modulus(t, x);
         auto const mu = linear_elastic_mp.mu(t, x);
+        auto const lambda = linear_elastic_mp.lambda(t,x);
 
         if (split == 0)
         {
@@ -100,7 +101,14 @@ struct IntegrationPointData final
             std::tie(sigma, sigma_tensile, C_tensile, C_compressive,
                      strain_energy_tensile, elastic_energy) =
                 MaterialLib::Solids::Phasefield::calculateDegradedStressAmor<
-                    DisplacementDim>(degradation, bulk_modulus, mu, eps);
+                    DisplacementDim>(degradation, bulk_modulus, mu, eps, reg_param);
+        }
+        else if (split == 2)
+        {
+            std::tie(sigma, sigma_tensile, C_tensile, C_compressive,
+                     strain_energy_tensile, elastic_energy) =
+                MaterialLib::Solids::Phasefield::calculateDegradedStressMiehe<
+                    DisplacementDim>(degradation, lambda, mu, eps, reg_param);
         }
     }
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -360,6 +368,5 @@ private:
 
 }  // namespace PhaseField
 }  // namespace ProcessLib
-
 
 #include "PhaseFieldFEM-impl.h"

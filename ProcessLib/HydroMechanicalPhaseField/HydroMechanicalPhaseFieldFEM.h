@@ -73,7 +73,7 @@ struct IntegrationPointData final
                                     ParameterLib::SpatialPosition const& x,
                                     double const /*dt*/,
                                     DisplacementVectorType const& /*u*/,
-                                    double const degradation, int const split)
+                                    double const degradation, int const split, double const reg_param)
     {
         auto linear_elastic_mp =
             static_cast<MaterialLib::Solids::LinearElasticIsotropic<
@@ -82,6 +82,7 @@ struct IntegrationPointData final
 
         auto const bulk_modulus = linear_elastic_mp.bulk_modulus(t, x);
         auto const mu = linear_elastic_mp.mu(t, x);
+        auto const lambda = linear_elastic_mp.lambda(t,x);
 
         if (split == 0)
         {
@@ -98,7 +99,15 @@ struct IntegrationPointData final
             std::tie(sigma_eff, sigma_tensile, C_tensile, C_compressive,
                      strain_energy_tensile, elastic_energy) =
                 MaterialLib::Solids::Phasefield::calculateDegradedStressAmor<
-                    DisplacementDim>(degradation, bulk_modulus, mu, eps);
+                    DisplacementDim>(degradation, bulk_modulus, mu, eps, reg_param);
+        }
+        else if (split == 2)
+        {
+            std::tie(sigma_eff, sigma_tensile, C_tensile, C_compressive,
+                     strain_energy_tensile, elastic_energy) =
+                MaterialLib::Solids::Phasefield::
+                    calculateDegradedStressMiehe<DisplacementDim>(
+                        degradation, lambda, mu, eps, reg_param);
         }
     }
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -215,11 +224,13 @@ public:
                 _process_data.crack_length_scale(0.0, x_position)[0];
             static constexpr double pi = boost::math::constants::pi<double>();
             if (DisplacementDim == 2)
-                ip_data.reg_source = _process_data.source*std::exp(-distance_from_source / ls) /
-                                   (2 * pi * std::pow(ls, 2));
+                ip_data.reg_source = _process_data.source *
+                                     std::exp(-distance_from_source / ls) /
+                                     (2 * pi * std::pow(ls, 2));
             else if (DisplacementDim == 3)
-                ip_data.reg_source = _process_data.source*std::exp(-distance_from_source / ls) /
-                                   (4 * pi * std::pow(ls, 3));
+                ip_data.reg_source = _process_data.source *
+                                     std::exp(-distance_from_source / ls) /
+                                     (4 * pi * std::pow(ls, 3));
         }
     }
 
