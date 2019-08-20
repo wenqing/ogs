@@ -126,11 +126,10 @@ void PhaseFieldLocalAssembler<ShapeFunction, IntegrationMethod,
         double degradation;
         // KKL
         if (_process_data.at_param == 3)
-            degradation = (4 * pow(ele_d, 3) - 3 * pow(ele_d, 4)) * (1 - k) + k;
+            degradation = (4 * pow(d_ip, 3) - 3 * pow(d_ip, 4)) * (1 - k) + k;
         // ATn
         else
-            degradation =
-                d_ip * d_ip * (1 - k) + k;  // ele_d * ele_d * (1 - k) + k;
+            degradation = d_ip * d_ip * (1 - k) + k; // ele_d * ele_d * (1 - k) + k;
 
         _ip_data[ip].updateConstitutiveRelation(
             t, x_position, dt, u, degradation, _process_data.split_method,
@@ -218,39 +217,43 @@ void PhaseFieldLocalAssembler<ShapeFunction, IntegrationMethod,
 
     int const n_integration_points = _integration_method.getNumberOfPoints();
     double ele_d = 0.0;
-    double ele_strain_energy_tensile = 0.0;
+//    double ele_strain_energy_tensile = 0.0;
     for (int ip = 0; ip < n_integration_points; ip++)
     {
         auto const& N = _ip_data[ip].N;
         ele_d += N.dot(d);
-auto const& dNdx = _ip_data[ip].dNdx;
-        auto& eps = _ip_data[ip].eps;
-        double const k = _process_data.residual_stiffness(t, x_position)[0];
-        double degradation;
-        // KKL
-        if (_process_data.at_param == 3)
-            degradation = (4 * pow(ele_d, 3) - 3 * pow(ele_d, 4)) * (1 - k) + k;
-        // ATn
-        else
-            degradation =
-                N.dot(d) * N.dot(d) * (1 - k) + k;  // ele_d * ele_d * (1 - k) + k;
-        auto const x_coord =
-            interpolateXCoordinate<ShapeFunction, ShapeMatricesType>(_element,
-                                                                     N);
-        auto const& B =
-            LinearBMatrix::computeBMatrix<DisplacementDim,
-                                          ShapeFunction::NPOINTS,
-                                          typename BMatricesType::BMatrixType>(
-                dNdx, N, x_coord, _is_axially_symmetric);
-
-        eps.noalias() = B * u;
-        _ip_data[ip].updateConstitutiveRelation(
-            t, x_position, dt, u, degradation, _process_data.split_method,
-            reg_param);
-        ele_strain_energy_tensile += _ip_data[ip].strain_energy_tensile;
     }
     ele_d = ele_d / n_integration_points;
-    ele_strain_energy_tensile = ele_strain_energy_tensile/n_integration_points;
+//    for (int ip = 0; ip < n_integration_points; ip++)
+//    {
+//        auto const& N = _ip_data[ip].N;
+//        auto const& dNdx = _ip_data[ip].dNdx;
+//        auto& eps = _ip_data[ip].eps;
+//        double const k = _process_data.residual_stiffness(t, x_position)[0];
+//        double degradation;
+//        // KKL
+//        if (_process_data.at_param == 3)
+//            degradation = (4 * pow(ele_d, 3) - 3 * pow(ele_d, 4)) * (1 - k) + k;
+//        // ATn
+//        else
+//            degradation = ele_d * ele_d * (1 - k) + k;
+//        auto const x_coord =
+//            interpolateXCoordinate<ShapeFunction, ShapeMatricesType>(_element,
+//                                                                     N);
+//        auto const& B =
+//            LinearBMatrix::computeBMatrix<DisplacementDim,
+//                                          ShapeFunction::NPOINTS,
+//                                          typename BMatricesType::BMatrixType>(
+//                dNdx, N, x_coord, _is_axially_symmetric);
+
+//        eps.noalias() = B * u;
+//        _ip_data[ip].updateConstitutiveRelation(
+//            t, x_position, dt, u, degradation, _process_data.split_method,
+//            reg_param);
+//        ele_strain_energy_tensile += _ip_data[ip].strain_energy_tensile;
+//    }
+//    ele_strain_energy_tensile =
+//        ele_strain_energy_tensile / n_integration_points;
 
     for (int ip = 0; ip < n_integration_points; ip++)
     {
@@ -268,13 +271,14 @@ auto const& dNdx = _ip_data[ip].dNdx;
         //        {
         double const k = _process_data.residual_stiffness(t, x_position)[0];
         double degradation;
+
         // KKL
         if (_process_data.at_param == 3)
             degradation = (4 * pow(ele_d, 3) - 3 * pow(ele_d, 4)) * (1 - k) + k;
         // ATn
         else
             degradation =
-                d_ip * d_ip * (1 - k) + k;  // ele_d * ele_d * (1 - k) + k;
+                   d_ip * d_ip * (1 - k) + k; //ele_d * ele_d * (1 - k) + k;
 
         auto const x_coord =
             interpolateXCoordinate<ShapeFunction, ShapeMatricesType>(_element,
@@ -291,7 +295,7 @@ auto const& dNdx = _ip_data[ip].dNdx;
             reg_param);
         //        }
 
-        if (_element.getID() == 1 && ip == 0)
+        if (_element.getID() == 1 && ip == 0 && t > 0.5)
             DBUG("something");
 
         auto const& strain_energy_tensile = _ip_data[ip].strain_energy_tensile;
@@ -316,12 +320,12 @@ auto const& dNdx = _ip_data[ip].dNdx;
         if (_process_data.at_param == 2)
         {
             local_Jac.noalias() +=
-                (2 * N.transpose() * N * ele_strain_energy_tensile +
+                (2 * N.transpose() * N * strain_energy_tensile +
                  gc * (N.transpose() * N / ls + dNdx.transpose() * dNdx * ls)) *
                 w;
 
             local_rhs.noalias() -=
-                (N.transpose() * N * d * 2 * ele_strain_energy_tensile +
+                (N.transpose() * N * d * 2 * strain_energy_tensile +
                  gc * ((N.transpose() * N / ls + dNdx.transpose() * dNdx * ls) *
                            d -
                        N.transpose() / ls) -
@@ -563,11 +567,11 @@ void PhaseFieldLocalAssembler<ShapeFunction, IntegrationMethod,
                 ((1 - d_ip) / ls + (dNdx * d).dot((dNdx * d)) * ls) * w;
         }
 
-//        if (_process_data.crack_pressure)
-//        {
-//            ele_pressure_work +=
-//                pressure_ip * (N_u * u_corrected).dot(dNdx * d) * w;
-//        }
+        //        if (_process_data.crack_pressure)
+        //        {
+        //            ele_pressure_work +=
+        //                pressure_ip * (N_u * u_corrected).dot(dNdx * d) * w;
+        //        }
         ele_pressure_work += _ip_data[ip].strain_energy_tensile * w;
     }
 
