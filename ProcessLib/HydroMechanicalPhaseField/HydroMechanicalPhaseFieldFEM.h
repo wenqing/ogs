@@ -58,13 +58,11 @@ struct IntegrationPointData final
     double strain_energy_tensile;
     double elastic_energy;
     double integration_weight;
-    double pressure, pressure_prev;
     double reg_source;
 
     void pushBackState()
     {
         eps_prev = eps;
-        pressure_prev = pressure;
         material_state_variables->pushBackState();
     }
 
@@ -218,8 +216,6 @@ public:
             ip_data.sigma.setZero(kelvin_vector_size);
             ip_data.strain_energy_tensile = 0.0;
             ip_data.elastic_energy = 0.0;
-            ip_data.pressure = 0.0;
-            ip_data.pressure_prev = 0.0;
             _secondary_data.N[ip] = shape_matrices[ip].N;
             ip_data.N = shape_matrices[ip].N;
             ip_data.dNdx = shape_matrices[ip].dNdx;

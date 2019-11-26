@@ -198,7 +198,10 @@ void HydroMechanicalPhaseFieldLocalAssembler<ShapeFunction, IntegrationMethod,
         local_coupled_solutions.local_coupled_xs[_phase_field_process_id];
     auto const& local_p =
         local_coupled_solutions.local_coupled_xs[_hydro_process_id];
+    auto const& local_p0 =
+        local_coupled_solutions.local_coupled_xs0[_hydro_process_id];
     assert(local_p.size() == pressure_size);
+    assert(local_p0.size() == pressure_size);
     assert(local_d.size() == phasefield_size);
 
     auto d = Eigen::Map<
@@ -208,6 +211,10 @@ void HydroMechanicalPhaseFieldLocalAssembler<ShapeFunction, IntegrationMethod,
     auto p = Eigen::Map<
         typename ShapeMatricesType::template VectorType<pressure_size> const>(
         local_p.data(), pressure_size);
+
+    auto p0 = Eigen::Map<
+        typename ShapeMatricesType::template VectorType<pressure_size> const>(
+        local_p0.data(), pressure_size);
 
     auto p_dot = Eigen::Map<
         typename ShapeMatricesType::template VectorType<pressure_size> const>(
@@ -268,23 +275,22 @@ void HydroMechanicalPhaseFieldLocalAssembler<ShapeFunction, IntegrationMethod,
         auto const& N = _ip_data[ip].N;
         auto const& dNdx = _ip_data[ip].dNdx;
         double const d_ip = N.dot(d);
+        double const p_ip = N.dot(p);
+        double const p0_ip = N.dot(p0);
 
-        auto& pressure = _ip_data[ip].pressure;
         double const p_fr =
             (_process_data.fluid_type == FluidType::Fluid_Type::IDEAL_GAS)
-                ? pressure
+                ? p_ip * 2.e6
                 : std::numeric_limits<double>::quiet_NaN();
-        double const rho_fr =
-            _process_data.getFluidDensity(t, x_position, p_fr);
-        double const beta_p = _process_data.getFluidCompressibility(p_fr);
+        double const rho_fr = 1.0;// _process_data.getFluidDensity(t, x_position, p_fr);
+        double const beta_p = 0.0;// _process_data.getFluidCompressibility(p_fr);
         double m_inv =
             porosity * beta_p + (alpha - porosity) * (1 - alpha) / Ks;
-        auto const& pressure_prev = _ip_data[ip].pressure_prev;
 
         auto const vol_strain = Invariants::trace(_ip_data[ip].eps);
         auto const vol_strain_prev = Invariants::trace(_ip_data[ip].eps_prev);
         double const dv_dt = (vol_strain - vol_strain_prev) / dt;
-        double const dp_dt = (pressure - pressure_prev) / dt;
+        double const dp_dt = (p_ip - p0_ip) / dt;
 
         double const grad_d_norm = (dNdx * d).norm();
 

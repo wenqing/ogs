@@ -9,12 +9,11 @@
 
 #pragma once
 
+#include <cassert>
+
 #include "HydroMechanicalPhaseFieldFEM.h"
 #include "HydroMechanicalPhaseFieldProcess.h"
 #include "HydroMechanicalPhaseFieldProcessData.h"
-
-#include <cassert>
-
 #include "NumLib/DOF/ComputeSparsityPattern.h"
 #include "ProcessLib/Process.h"
 #include "ProcessLib/SmallDeformation/CreateLocalAssemblers.h"
@@ -272,6 +271,7 @@ void HydroMechanicalPhaseFieldProcess<DisplacementDim>::
             "HydroMechanicalPhaseFieldProcess for "
             "the staggered scheme.");
     }
+    setCoupledSolutionsOfPreviousTimeStep();
     dof_tables.emplace_back(getDOFTableByProcessID(_hydro_process_id));
     dof_tables.emplace_back(
         getDOFTableByProcessID(_mechanics_related_process_id));
@@ -294,8 +294,10 @@ void HydroMechanicalPhaseFieldProcess<
 
     _process_data.dt = dt;
     _process_data.t = t;
-    _x_previous_timestep =
+    _x_previous_timestep[process_id] =
         MathLib::MatrixVectorTraits<GlobalVector>::newInstance(x);
+    //    MathLib::LinAlg::setLocalAccessibleVector(*_x_previous_timestep);
+    //    MathLib::LinAlg::copy(x,*_x_previous_timestep);
 
     if (process_id != _mechanics_related_process_id)
     {
@@ -378,14 +380,39 @@ void HydroMechanicalPhaseFieldProcess<DisplacementDim>::updateConstraints(
     GlobalVector& lower, GlobalVector& upper)
 {
     lower.setZero();
-    MathLib::LinAlg::setLocalAccessibleVector(*_x_previous_timestep);
-    MathLib::LinAlg::copy(*_x_previous_timestep, upper);
+    MathLib::LinAlg::setLocalAccessibleVector(
+        *_x_previous_timestep[_phase_field_process_id]);
+    MathLib::LinAlg::copy(*_x_previous_timestep[_phase_field_process_id],
+                          upper);
 
-    GlobalIndexType x_size = _x_previous_timestep->size();
+    GlobalIndexType x_size =
+        _x_previous_timestep[_phase_field_process_id]->size();
 
     for (GlobalIndexType i = 0; i < x_size; i++)
-        if ((*_x_previous_timestep)[i] > _process_data.pf_irrv)
+        if ((*_x_previous_timestep[_phase_field_process_id])[i] >
+            _process_data.pf_irrv)
             upper.set(i, 1.0);
+}
+
+template <int DisplacementDim>
+void HydroMechanicalPhaseFieldProcess<DisplacementDim>::
+    setCoupledSolutionsOfPreviousTimeStepPerProcess(const int process_id)
+{
+    MathLib::LinAlg::setLocalAccessibleVector(
+        *_x_previous_timestep[process_id]);
+    _coupled_solutions->coupled_xs_t0[process_id] =
+        _x_previous_timestep[process_id].get();
+}
+
+template <int DisplacementDim>
+void HydroMechanicalPhaseFieldProcess<
+    DisplacementDim>::setCoupledSolutionsOfPreviousTimeStep()
+{
+    _coupled_solutions->coupled_xs_t0.resize(3);
+    setCoupledSolutionsOfPreviousTimeStepPerProcess(_hydro_process_id);
+    setCoupledSolutionsOfPreviousTimeStepPerProcess(
+        _mechanics_related_process_id);
+    setCoupledSolutionsOfPreviousTimeStepPerProcess(_phase_field_process_id);
 }
 
 }  // namespace HydroMechanicalPhaseField
