@@ -346,11 +346,11 @@ void HydroMechanicalPhaseFieldProcess<
 }
 
 template <int DisplacementDim>
-void HydroMechanicalPhaseFieldProcess<DisplacementDim>::
-    postNonLinearSolverConcreteProcess(GlobalVector const& /*x*/,
-                                       const double t,
-                                       double const /*dt*/,
-                                       const int process_id)
+void HydroMechanicalPhaseFieldProcess<
+    DisplacementDim>::postNonLinearSolverConcreteProcess(GlobalVector const& x,
+                                                         const double t,
+                                                         double const dt,
+                                                         const int process_id)
 {
     std::vector<std::reference_wrapper<NumLib::LocalToGlobalIndexMap>>
         dof_tables;
@@ -359,8 +359,6 @@ void HydroMechanicalPhaseFieldProcess<DisplacementDim>::
         getDOFTableByProcessID(_mechanics_related_process_id));
     dof_tables.emplace_back(getDOFTableByProcessID(_phase_field_process_id));
 
-    //    if (process_id == _mechanics_related_process_id ||
-    //        process_id == _phase_field_process_id)
     if (process_id == _phase_field_process_id)
     {
         INFO("Fracture width computation");
@@ -372,6 +370,17 @@ void HydroMechanicalPhaseFieldProcess<DisplacementDim>::
             &HydroMechanicalPhaseFieldLocalAssemblerInterface::
                 computeFractureWidth,
             _local_assemblers, dof_tables, t, _coupled_solutions, _mesh);
+    }
+
+    const bool use_monolithic_scheme = false;
+    if (process_id == _phase_field_process_id)
+    {
+        INFO("After pressure solution, pressure is copied for fixed stress");
+        GlobalExecutor::executeMemberOnDereferenced(
+            &HydroMechanicalPhaseFieldLocalAssemblerInterface::
+                postNonLinearSolver,
+            _local_assemblers, getDOFTable(process_id), x, t, dt,
+            use_monolithic_scheme);
     }
 }
 
