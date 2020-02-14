@@ -19,6 +19,7 @@
 
 #include "MaterialLib/PorousMedium/Permeability/Permeability.h"
 #include "MaterialLib/PorousMedium/Storage/Storage.h"
+#include "MaterialLib/MPL/MaterialSpatialDistributionMap.h"
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "NumLib/DOF/DOFTableUtil.h"
 #include "NumLib/Extrapolation/ExtrapolatableElement.h"
@@ -92,12 +93,14 @@ public:
         std::size_t const /*local_matrix_size*/,
         bool const is_axially_symmetric,
         unsigned const integration_order,
+        MaterialPropertyLib::MaterialSpatialDistributionMap& media_map,
         int const gravitational_axis_id,
         double const gravitational_acceleration,
         double const reference_temperature,
         LiquidFlowMaterialProperties const& material_propertries)
         : _element(element),
           _integration_method(integration_order),
+          _media_map(media_map),
           _gravitational_axis_id(gravitational_axis_id),
           _gravitational_acceleration(gravitational_acceleration),
           _reference_temperature(reference_temperature),
@@ -215,11 +218,12 @@ private:
 
     template <typename LaplacianGravityVelocityCalculator>
     void computeDarcyVelocityLocal(
-        const int material_id,
         const double t,
         std::vector<double> const& local_x,
         ParameterLib::SpatialPosition const& pos,
         MatrixOfVelocityAtIntegrationPoints& darcy_velocity_at_ips) const;
+
+    MaterialPropertyLib::MaterialSpatialDistributionMap& _media_map;
 
     const int _gravitational_axis_id;
     const double _gravitational_acceleration;

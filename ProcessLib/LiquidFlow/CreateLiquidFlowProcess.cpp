@@ -13,12 +13,14 @@
 
 #include <algorithm>
 
+#include "LiquidFlowProcess.h"
+#include "MaterialLib/MPL/CreateMaterialSpatialDistributionMap.h"
+#include "MaterialLib/MPL/MaterialSpatialDistributionMap.h"
+#include "MaterialLib/MPL/Medium.h"
 #include "MaterialLib/PhysicalConstant.h"
 #include "ParameterLib/Utils.h"
 #include "ProcessLib/Output/CreateSecondaryVariables.h"
 #include "ProcessLib/Utils/ProcessUtils.h"
-
-#include "LiquidFlowProcess.h"
 
 namespace ProcessLib
 {
@@ -33,7 +35,8 @@ std::unique_ptr<Process> createLiquidFlowProcess(
     unsigned const integration_order,
     BaseLib::ConfigTree const& config,
     std::vector<std::unique_ptr<MeshLib::Mesh>> const& meshes,
-    std::string const& output_directory)
+    std::string const& output_directory,
+    std::map<int, std::shared_ptr<MaterialPropertyLib::Medium>> const& media)
 {
     //! \ogs_file_param{prj__processes__process__type}
     config.checkConfigParameter("type", "LIQUID_FLOW");
@@ -54,7 +57,6 @@ std::unique_ptr<Process> createLiquidFlowProcess(
     process_variables.push_back(std::move(per_process_variables));
 
     SecondaryVariableCollection secondary_variables;
-
 
     ProcessLib::createSecondaryVariables(config, secondary_variables);
 
@@ -111,12 +113,27 @@ std::unique_ptr<Process> createLiquidFlowProcess(
             *calculatesurfaceflux_config, meshes, output_directory);
     }
 
+    auto media_map =
+        MaterialPropertyLib::createMaterialSpatialDistributionMap(media, mesh);
+
+    std::array const requiredFluidProperties = {MaterialPropertyLib::viscosity,
+                                                MaterialPropertyLib::density};
+    std::array const requiredSolidProperties = {MaterialPropertyLib::storage};
+
+    for (auto const& m : media)
+    {
+        checkRequiredProperties(m.second->phase("AqueousLiquid"),
+                                requiredFluidProperties);
+        checkRequiredProperties(m.second->phase("Solid"),
+                                requiredSolidProperties);
+    }
+
     return std::make_unique<LiquidFlowProcess>(
         std::move(name), mesh, std::move(jacobian_assembler), parameters,
         integration_order, std::move(process_variables),
-        std::move(secondary_variables), material_ids, gravity_axis_id, g,
-        reference_temperature, mat_config, std::move(surfaceflux));
+        std::move(secondary_variables), material_ids, media_map,
+        gravity_axis_id, g, reference_temperature, mat_config,
+        std::move(surfaceflux));
 }
-
 }  // namespace LiquidFlow
 }  // namespace ProcessLib

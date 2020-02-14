@@ -27,7 +27,12 @@ class Element;
 class Mesh;
 template <typename PROP_VAL_TYPE>
 class PropertyVector;
-}
+}  // namespace MeshLib
+
+namespace MaterialPropertyLib
+{
+class MaterialSpatialDistributionMap;
+}  // namespace MaterialPropertyLib
 
 namespace ProcessLib
 {
@@ -67,9 +72,12 @@ public:
             process_variables,
         SecondaryVariableCollection&& secondary_variables,
         MeshLib::PropertyVector<int> const* const material_ids,
+        std::unique_ptr<MaterialPropertyLib::MaterialSpatialDistributionMap>&
+            media_map,
         int const gravitational_axis_id,
         double const gravitational_acceleration,
         double const reference_temperature,
+
         BaseLib::ConfigTree const& config,
         std::unique_ptr<ProcessLib::SurfaceFluxData>&& surfaceflux);
 
@@ -111,6 +119,9 @@ private:
         GlobalVector const& xdot, const double dxdot_dx, const double dx_dx,
         int const process_id, GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b,
         GlobalMatrix& Jac) override;
+
+    std::unique_ptr<MaterialPropertyLib::MaterialSpatialDistributionMap> const
+        _media_map;
 
     const int _gravitational_axis_id;
     const double _gravitational_acceleration;
