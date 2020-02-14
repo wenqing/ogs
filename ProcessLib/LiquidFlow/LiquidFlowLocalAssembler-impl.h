@@ -33,7 +33,6 @@ void LiquidFlowLocalAssembler<ShapeFunction, IntegrationMethod, GlobalDim>::
 {
     ParameterLib::SpatialPosition pos;
     pos.setElementID(_element.getID());
-    const int material_id = _material_properties.getMaterialID(pos);
 
     // evaluate the permeability to distinguish which computeDarcyVelocity
     // method should be used
@@ -56,12 +55,12 @@ void LiquidFlowLocalAssembler<ShapeFunction, IntegrationMethod, GlobalDim>::
     if (permeability.size() == 1)
     {  // isotropic or 1D problem.
         assembleMatrixAndVector<IsotropicCalculator>(
-            material_id, t, local_x, local_M_data, local_K_data, local_b_data);
+            t, local_x, local_M_data, local_K_data, local_b_data);
     }
     else
     {
         assembleMatrixAndVector<AnisotropicCalculator>(
-            material_id, t, local_x, local_M_data, local_K_data, local_b_data);
+            t, local_x, local_M_data, local_K_data, local_b_data);
     }
 }
 
@@ -119,7 +118,7 @@ template <typename ShapeFunction, typename IntegrationMethod,
           unsigned GlobalDim>
 template <typename LaplacianGravityVelocityCalculator>
 void LiquidFlowLocalAssembler<ShapeFunction, IntegrationMethod, GlobalDim>::
-    assembleMatrixAndVector(const int material_id, double const t,
+    assembleMatrixAndVector(double const t,
                             std::vector<double> const& local_x,
                             std::vector<double>& local_M_data,
                             std::vector<double>& local_K_data,

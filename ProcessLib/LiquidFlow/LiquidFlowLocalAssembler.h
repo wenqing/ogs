@@ -12,13 +12,8 @@
 
 #pragma once
 
-#include <map>
-#include <unordered_map>
 #include <vector>
-#include <typeindex>
 
-#include "MaterialLib/PorousMedium/Permeability/Permeability.h"
-#include "MaterialLib/PorousMedium/Storage/Storage.h"
 #include "MaterialLib/MPL/MaterialSpatialDistributionMap.h"
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "NumLib/DOF/DOFTableUtil.h"
@@ -30,7 +25,6 @@
 #include "ProcessLib/LocalAssemblerTraits.h"
 #include "ProcessLib/Utils/InitShapeMatrices.h"
 
-#include "LiquidFlowMaterialProperties.h"
 
 namespace ProcessLib
 {
@@ -93,18 +87,16 @@ public:
         std::size_t const /*local_matrix_size*/,
         bool const is_axially_symmetric,
         unsigned const integration_order,
-        MaterialPropertyLib::MaterialSpatialDistributionMap& media_map,
+        MaterialPropertyLib::MaterialSpatialDistributionMap& media_map,                             
         int const gravitational_axis_id,
         double const gravitational_acceleration,
-        double const reference_temperature,
-        LiquidFlowMaterialProperties const& material_propertries)
+        double const reference_temperature)
         : _element(element),
           _integration_method(integration_order),
           _media_map(media_map),
           _gravitational_axis_id(gravitational_axis_id),
           _gravitational_acceleration(gravitational_acceleration),
-          _reference_temperature(reference_temperature),
-          _material_properties(material_propertries)
+          _reference_temperature(reference_temperature)
     {
         unsigned const n_integration_points =
             _integration_method.getNumberOfPoints();
@@ -210,7 +202,7 @@ private:
     };
 
     template <typename LaplacianGravityVelocityCalculator>
-    void assembleMatrixAndVector(const int material_id, double const t,
+    void assembleMatrixAndVector(double const t,
                                  std::vector<double> const& local_x,
                                  std::vector<double>& local_M_data,
                                  std::vector<double>& local_K_data,
@@ -228,7 +220,6 @@ private:
     const int _gravitational_axis_id;
     const double _gravitational_acceleration;
     const double _reference_temperature;
-    const LiquidFlowMaterialProperties& _material_properties;
 };
 
 }  // namespace LiquidFlow
