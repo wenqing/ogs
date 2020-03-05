@@ -8,7 +8,13 @@
  *
  */
 #include "CreateTwoPhaseFlowWithPrhoProcess.h"
+
 #include <cassert>
+
+#include "MaterialLib/MPL/CreateMaterialSpatialDistributionMap.h"
+#include "MaterialLib/MPL/MaterialSpatialDistributionMap.h"
+#include "MaterialLib/MPL/Medium.h"
+
 #include "ParameterLib/Utils.h"
 #include "ProcessLib/Output/CreateSecondaryVariables.h"
 #include "ProcessLib/TwoPhaseFlowWithPrho/CreateTwoPhaseFlowPrhoMaterialProperties.h"
@@ -17,21 +23,21 @@
 #include "TwoPhaseFlowWithPrhoProcess.h"
 #include "TwoPhaseFlowWithPrhoProcessData.h"
 
+
 namespace ProcessLib
 {
 namespace TwoPhaseFlowWithPrho
 {
 std::unique_ptr<Process> createTwoPhaseFlowWithPrhoProcess(
-    std::string name,
-    MeshLib::Mesh& mesh,
+    std::string name, MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<ProcessVariable> const& variables,
     std::vector<std::unique_ptr<ParameterLib::ParameterBase>> const& parameters,
-    unsigned const integration_order,
-    BaseLib::ConfigTree const& config,
+    unsigned const integration_order, BaseLib::ConfigTree const& config,
     std::map<std::string,
              std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
-        curves)
+        curves,
+    std::map<int, std::shared_ptr<MaterialPropertyLib::Medium>> const& media)
 {
     //! \ogs_file_param{prj__processes__process__type}
     config.checkConfigParameter("type", "TWOPHASE_FLOW_PRHO");
@@ -81,6 +87,24 @@ std::unique_ptr<Process> createTwoPhaseFlowWithPrhoProcess(
         //! \ogs_file_param_special{prj__processes__process__TWOPHASE_FLOW_PRHO__temperature}
         "temperature", parameters, 1, &mesh);
 
+    auto medium_map =
+        MaterialPropertyLib::createMaterialSpatialDistributionMap(media, mesh);
+
+    std::array const requiredFluidProperties = {MaterialPropertyLib::viscosity,
+                                                MaterialPropertyLib::density};
+    std::array const requiredGasProperties = {MaterialPropertyLib::viscosity,
+                                              MaterialPropertyLib::density};
+    std::array const requiredSolidProperties = {MaterialPropertyLib::storage};
+
+    for (auto const& m : media)
+    {
+        checkRequiredProperties(m.second->phase("AqueousLiquid"),
+                                requiredFluidProperties);
+        checkRequiredProperties(m.second->phase("Gas"), requiredGasProperties);
+        checkRequiredProperties(m.second->phase("Solid"),
+                                requiredSolidProperties);
+    }
+
     //! \ogs_file_param{prj__processes__process__TWOPHASE_FLOW_PRHO__material_property}
     auto const& mat_config = config.getConfigSubtree("material_property");
 
@@ -102,8 +126,9 @@ std::unique_ptr<Process> createTwoPhaseFlowWithPrhoProcess(
                                                  parameters);
 
     TwoPhaseFlowWithPrhoProcessData process_data{
-        specific_body_force, has_gravity, mass_lumping,       diff_coeff_b,
-        diff_coeff_a,        temperature, std::move(material)};
+        specific_body_force, has_gravity,          mass_lumping,
+        diff_coeff_b,        diff_coeff_a,         temperature,
+        std::move(material), std::move(medium_map)};
 
     return std::make_unique<TwoPhaseFlowWithPrhoProcess>(
         std::move(name), mesh, std::move(jacobian_assembler), parameters,

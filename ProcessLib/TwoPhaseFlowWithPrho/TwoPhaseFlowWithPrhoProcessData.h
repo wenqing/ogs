@@ -12,6 +12,8 @@
 
 #include "TwoPhaseFlowWithPrhoMaterialProperties.h"
 
+#include "MaterialLib/MPL/MaterialSpatialDistributionMap.h"
+
 namespace ProcessLib
 {
 template <typename T>
@@ -29,6 +31,9 @@ struct TwoPhaseFlowWithPrhoProcessData
     ParameterLib::Parameter<double> const& _diffusion_coeff_component_a;
     ParameterLib::Parameter<double> const& _temperature;
     std::unique_ptr<TwoPhaseFlowWithPrhoMaterialProperties> _material;
+
+    std::unique_ptr<MaterialPropertyLib::MaterialSpatialDistributionMap>
+        medium_map;
 };
 
 }  // namespace TwoPhaseFlowWithPrho

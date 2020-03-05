@@ -53,15 +53,14 @@ namespace ProcessLib
 namespace TwoPhaseFlowWithPrho
 {
 std::unique_ptr<Process> createTwoPhaseFlowWithPrhoProcess(
-    std::string name,
-    MeshLib::Mesh& mesh,
+    std::string name, MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<ProcessVariable> const& variables,
     std::vector<std::unique_ptr<ParameterLib::ParameterBase>> const& parameters,
-    unsigned const integration_order,
-    BaseLib::ConfigTree const& config,
+    unsigned const integration_order, BaseLib::ConfigTree const& config,
     std::map<std::string,
              std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
-        curves);
+        curves,
+    std::map<int, std::shared_ptr<MaterialPropertyLib::Medium>> const& media);
 }  // namespace TwoPhaseFlowWithPrho
 }  // namespace ProcessLib
