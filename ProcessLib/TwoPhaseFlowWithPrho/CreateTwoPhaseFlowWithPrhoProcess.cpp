@@ -90,19 +90,20 @@ std::unique_ptr<Process> createTwoPhaseFlowWithPrhoProcess(
     auto medium_map =
         MaterialPropertyLib::createMaterialSpatialDistributionMap(media, mesh);
 
-    std::array const requiredFluidProperties = {MaterialPropertyLib::viscosity,
-                                                MaterialPropertyLib::density};
-    std::array const requiredGasProperties = {MaterialPropertyLib::viscosity,
-                                              MaterialPropertyLib::density};
-    std::array const requiredSolidProperties = {MaterialPropertyLib::storage};
+    std::array const requiredFluidProperties = {
+        MaterialPropertyLib::density,
+        MaterialPropertyLib::relative_permeability,
+        MaterialPropertyLib::viscosity};
+    std::array const requiredGasProperties = {
+        MaterialPropertyLib::density,
+        MaterialPropertyLib::relative_permeability,
+        MaterialPropertyLib::viscosity};
 
     for (auto const& m : media)
     {
         checkRequiredProperties(m.second->phase("AqueousLiquid"),
                                 requiredFluidProperties);
         checkRequiredProperties(m.second->phase("Gas"), requiredGasProperties);
-        checkRequiredProperties(m.second->phase("Solid"),
-                                requiredSolidProperties);
     }
 
     //! \ogs_file_param{prj__processes__process__TWOPHASE_FLOW_PRHO__material_property}

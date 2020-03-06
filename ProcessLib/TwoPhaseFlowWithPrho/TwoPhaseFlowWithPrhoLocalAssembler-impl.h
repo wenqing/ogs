@@ -12,19 +12,26 @@
 
 #include "TwoPhaseFlowWithPrhoLocalAssembler.h"
 
+#include "MaterialLib/MPL/MaterialSpatialDistributionMap.h"
+#include "MaterialLib/MPL/Medium.h"
+#include "MaterialLib/MPL/Utils/FormEigenTensor.h"
+#include "MaterialLib/MPL/VariableType.h"
+
 #include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "NumLib/Function/Interpolation.h"
 #include "TwoPhaseFlowWithPrhoProcessData.h"
 
 namespace ProcessLib
 {
+namespace MPL = MaterialPropertyLib;
+
 namespace TwoPhaseFlowWithPrho
 {
 template <typename ShapeFunction, typename IntegrationMethod,
           unsigned GlobalDim>
 void TwoPhaseFlowWithPrhoLocalAssembler<
     ShapeFunction, IntegrationMethod,
-    GlobalDim>::assemble(double const t, double const /*dt*/,
+    GlobalDim>::assemble(double const t, double const dt,
                          std::vector<double> const& local_x,
                          std::vector<double> const& /*local_xdot*/,
                          std::vector<double>& local_M_data,
@@ -98,6 +105,18 @@ void TwoPhaseFlowWithPrhoLocalAssembler<
         permeability.diagonal().setConstant(perm(0, 0));
     }
 
+    auto const& medium = *_process_data.medium_map->getMedium(_element.getID());
+    auto const& liquid_phase = medium.phase("AqueousLiquid");
+    auto const& gas_phase = medium.phase("Gas");
+    MaterialPropertyLib::VariableArray variables;
+
+    double const temperature =
+        medium
+            .property(MaterialPropertyLib::PropertyType::reference_temperature)
+            .template value<double>(variables, pos, t, dt);
+    variables[static_cast<int>(MaterialPropertyLib::Variable::temperature)] =
+        temperature;
+
     for (unsigned ip = 0; ip < n_integration_points; ip++)
     {
         auto const& sm = _shape_matrices[ip];
@@ -108,12 +127,16 @@ void TwoPhaseFlowWithPrhoLocalAssembler<
         NumLib::shapeFunctionInterpolate(local_x, sm.N, pl_int_pt,
                                          totalrho_int_pt);
 
-        const double temperature = _process_data._temperature(t, pos)[0];
+        variables[static_cast<int>(
+            MaterialPropertyLib::Variable::phase_pressure)] = pl_int_pt;
 
-        double const rho_gas =
-            _process_data._material->getGasDensity(pl_int_pt, temperature);
-        double const rho_h2o =
-            _process_data._material->getLiquidDensity(pl_int_pt, temperature);
+        auto const rho_gas =
+            gas_phase.property(MaterialPropertyLib::PropertyType::density)
+                .template value<double>(variables, pos, t, dt);
+
+        auto const rho_h2o =
+            liquid_phase.property(MaterialPropertyLib::PropertyType::density)
+                .template value<double>(variables, pos, t, dt);
 
         double& Sw = _ip_data[ip].sw;
         /// Here only consider one component in gas phase
@@ -139,8 +162,13 @@ void TwoPhaseFlowWithPrhoLocalAssembler<
         {
             OGS_FATAL("Computation of local constitutive relation failed.");
         }
-        double const pc = _process_data._material->getCapillaryPressure(
-            material_id, t, pos, pl_int_pt, temperature, Sw);
+
+        variables[static_cast<int>(
+            MaterialPropertyLib::Variable::liquid_saturation)] = Sw;
+        double const pc =
+            medium
+                .property(MaterialPropertyLib::PropertyType::capillary_pressure)
+                .template value<double>(variables, pos, t, dt);
 
         double const rho_wet = rho_h2o + rho_h2_wet;
         _saturation[ip] = Sw;
@@ -148,12 +176,15 @@ void TwoPhaseFlowWithPrhoLocalAssembler<
 
         // Assemble M matrix
         // nonwetting
-        double dPC_dSw =
-            _process_data._material->getCapillaryPressureDerivative(
-                material_id, t, pos, pl_int_pt, temperature, Sw);
+        double const dPC_dSw =
+            medium
+                .property(MaterialPropertyLib::PropertyType::capillary_pressure)
+                .template dValue<double>(
+                    variables, MPL::Variable::liquid_saturation, pos, t, dt);
 
-        double const porosity = _process_data._material->getPorosity(
-            material_id, t, pos, pl_int_pt, temperature, 0);
+        double const porosity =
+            medium.property(MaterialPropertyLib::PropertyType::porosity)
+                .template value<double>(variables, pos, t, dt);
 
         Mgx.noalias() += porosity * _ip_data[ip].massOperator;
 
@@ -161,22 +192,27 @@ void TwoPhaseFlowWithPrhoLocalAssembler<
 
         Mlx.noalias() +=
             porosity * (1 + dSwdrho * rho_h2o) * _ip_data[ip].massOperator;
+
         double const k_rel_gas =
-            _process_data._material->getNonwetRelativePermeability(
-                t, pos, _pressure_nonwetting[ip], temperature, Sw);
-        double const mu_gas = _process_data._material->getGasViscosity(
-            _pressure_nonwetting[ip], temperature);
-        double const lambda_gas = k_rel_gas / mu_gas;
+            gas_phase.property(MPL::PropertyType::relative_permeability)
+                .template value<double>(variables, pos, t, dt);
+
+        double const mu_gas =
+            gas_phase.property(MPL::PropertyType::viscosity)
+                .template value<double>(variables, pos, t, dt);
+
+        auto const lambda_gas = k_rel_gas / mu_gas;
         double const diffusion_coeff_component_h2 =
             _process_data._diffusion_coeff_component_b(t, pos)[0];
 
         // wet
         double const k_rel_wet =
-            _process_data._material->getWetRelativePermeability(
-                t, pos, pl_int_pt, temperature, Sw);
-        double const mu_wet =
-            _process_data._material->getLiquidViscosity(pl_int_pt, temperature);
-        double const lambda_wet = k_rel_wet / mu_wet;
+            liquid_phase.property(MPL::PropertyType::relative_permeability)
+                .template value<double>(variables, pos, t, dt);
+        auto const mu_wet = liquid_phase.property(MPL::PropertyType::viscosity)
+                                .template value<double>(variables, pos, t, dt);
+
+        auto const lambda_wet = k_rel_wet / mu_wet;
 
         laplace_operator.noalias() = sm.dNdx.transpose() * permeability *
                                      sm.dNdx * _ip_data[ip].integration_weight;
