@@ -34,3 +34,4 @@
 #include "RelativePermeability/CreateRelPermBrooksCorey.h"
 #include "RelativePermeability/CreateRelPermLiakopoulos.h"
 #include "RelativePermeability/CreateRelPermVanGenuchten.h"
+#include "RelativePermeability/CreateRelPermNonWettingVanGenuchten.h"
