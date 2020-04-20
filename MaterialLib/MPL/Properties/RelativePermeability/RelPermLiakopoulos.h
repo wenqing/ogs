@@ -47,6 +47,7 @@ s^{\mathrm{r}}_{\mathrm{L}}}\f]
 class RelPermLiakopoulos final : public Property
 {
 private:
+    Phase* _phase = nullptr;
     Medium* _medium = nullptr;
     /**
     Parameters for Liakopoulos relative permeability:
@@ -72,15 +73,21 @@ public:
     void setScale(
         std::variant<Medium*, Phase*, Component*> scale_pointer) override
     {
+        // TODO (WW): Remove
+        // if (std::holds_alternative<Medium*>(scale_pointer))
         if (std::holds_alternative<Medium*>(scale_pointer))
         {
             _medium = std::get<Medium*>(scale_pointer);
         }
+        if (std::holds_alternative<Phase*>(scale_pointer))
+        {
+            _phase = std::get<Phase*>(scale_pointer);
+        }
         else
         {
             OGS_FATAL(
-                "The property 'RelPermLiakopoulos' is implemented on the "
-                "'media' scale only.");
+                "The property 'RelativePermeabilityVanGenuchten' is "
+                "implemented on the 'phase' and the 'media' scale only.");
         }
     }
 

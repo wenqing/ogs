@@ -29,6 +29,7 @@ private:
     double const _S_L_max;
     double const _k_rel_min;
     double const _m;
+    Phase* _phase = nullptr;
     Medium* _medium = nullptr;
 
 public:
@@ -41,15 +42,21 @@ public:
     void setScale(
         std::variant<Medium*, Phase*, Component*> scale_pointer) override
     {
+        // TODO (WW): Remove
+        // if (std::holds_alternative<Medium*>(scale_pointer))
         if (std::holds_alternative<Medium*>(scale_pointer))
         {
             _medium = std::get<Medium*>(scale_pointer);
+        }
+        if (std::holds_alternative<Phase*>(scale_pointer))
+        {
+            _phase = std::get<Phase*>(scale_pointer);
         }
         else
         {
             OGS_FATAL(
                 "The property 'RelativePermeabilityVanGenuchten' is "
-                "implemented on the 'media' scale only.");
+                "implemented on the 'phase' and the 'media' scale only.");
         }
     }
 
