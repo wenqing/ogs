@@ -17,12 +17,9 @@
 
 #include "ParameterLib/Utils.h"
 #include "ProcessLib/Output/CreateSecondaryVariables.h"
-#include "ProcessLib/TwoPhaseFlowWithPrho/CreateTwoPhaseFlowPrhoMaterialProperties.h"
-#include "ProcessLib/TwoPhaseFlowWithPrho/TwoPhaseFlowWithPrhoMaterialProperties.h"
 #include "ProcessLib/Utils/ProcessUtils.h"
 #include "TwoPhaseFlowWithPrhoProcess.h"
 #include "TwoPhaseFlowWithPrhoProcessData.h"
-
 
 namespace ProcessLib
 {
@@ -82,10 +79,6 @@ std::unique_ptr<Process> createTwoPhaseFlowWithPrhoProcess(
         config,
         //! \ogs_file_param_special{prj__processes__process__TWOPHASE_FLOW_PRHO__diffusion_coeff_component_a}
         "diffusion_coeff_component_a", parameters, 1, &mesh);
-    auto& temperature = ParameterLib::findParameter<double>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__TWOPHASE_FLOW_PRHO__temperature}
-        "temperature", parameters, 1, &mesh);
 
     auto medium_map =
         MaterialPropertyLib::createMaterialSpatialDistributionMap(media, mesh);
@@ -106,9 +99,6 @@ std::unique_ptr<Process> createTwoPhaseFlowWithPrhoProcess(
         checkRequiredProperties(m.second->phase("Gas"), requiredGasProperties);
     }
 
-    //! \ogs_file_param{prj__processes__process__TWOPHASE_FLOW_PRHO__material_property}
-    auto const& mat_config = config.getConfigSubtree("material_property");
-
     boost::optional<MeshLib::PropertyVector<int> const&> material_ids;
     if (mesh.getProperties().existsPropertyVector<int>("MaterialIDs"))
     {
@@ -122,20 +112,14 @@ std::unique_ptr<Process> createTwoPhaseFlowWithPrhoProcess(
         INFO("The twophase flow is in homogeneous porous media.");
     }
 
-    std::unique_ptr<TwoPhaseFlowWithPrhoMaterialProperties> material =
-        createTwoPhaseFlowPrhoMaterialProperties(mat_config, material_ids,
-                                                 parameters);
-
     TwoPhaseFlowWithPrhoProcessData process_data{
-        specific_body_force, has_gravity,          mass_lumping,
-        diff_coeff_b,        diff_coeff_a,         temperature,
-        std::move(material), std::move(medium_map)};
+        specific_body_force, has_gravity,  mass_lumping,
+        diff_coeff_b,        diff_coeff_a, std::move(medium_map)};
 
     return std::make_unique<TwoPhaseFlowWithPrhoProcess>(
         std::move(name), mesh, std::move(jacobian_assembler), parameters,
         integration_order, std::move(process_variables),
-        std::move(process_data), std::move(secondary_variables), mat_config,
-        curves);
+        std::move(process_data), std::move(secondary_variables), curves);
 }
 
 }  // namespace TwoPhaseFlowWithPrho

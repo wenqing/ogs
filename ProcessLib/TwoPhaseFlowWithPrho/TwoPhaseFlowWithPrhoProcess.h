@@ -48,7 +48,6 @@ public:
             process_variables,
         TwoPhaseFlowWithPrhoProcessData&& process_data,
         SecondaryVariableCollection&& secondary_variables,
-        BaseLib::ConfigTree const& config,
         std::map<std::string,
                  std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
             curves);

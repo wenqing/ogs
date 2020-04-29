@@ -30,10 +30,8 @@ namespace TwoPhaseFlowWithPrho
 template <typename NodalMatrixType>
 struct IntegrationPointData final
 {
-    explicit IntegrationPointData(
-        TwoPhaseFlowWithPrhoMaterialProperties& material_property_)
-        : mat_property(material_property_),
-          sw(1.0),
+    explicit IntegrationPointData()
+        : sw(1.0),
           rho_m(0.0),
           dsw_dpg(0.0),
           dsw_drho(0.0),
@@ -41,7 +39,6 @@ struct IntegrationPointData final
           drhom_drho(0.0)
     {
     }
-    TwoPhaseFlowWithPrhoMaterialProperties& mat_property;
     double sw;
     double rho_m;
     double dsw_dpg;
@@ -117,7 +114,7 @@ public:
         _ip_data.reserve(n_integration_points);
         for (unsigned ip = 0; ip < n_integration_points; ip++)
         {
-            _ip_data.emplace_back(*_process_data._material);
+            _ip_data.emplace_back();
             auto const& sm = _shape_matrices[ip];
             _ip_data[ip].integration_weight =
                 sm.integralMeasure * sm.detJ *

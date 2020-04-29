@@ -20,6 +20,7 @@
 #include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "NumLib/Function/Interpolation.h"
 #include "TwoPhaseFlowWithPrhoProcessData.h"
+#include "TwoPhaseFlowWithPrhoConstitutiveLaw.h"
 
 namespace ProcessLib
 {
@@ -88,27 +89,13 @@ void TwoPhaseFlowWithPrhoLocalAssembler<
 
     ParameterLib::SpatialPosition pos;
     pos.setElementID(_element.getID());
-    const int material_id =
-        _process_data._material->getMaterialID(pos.getElementID().get());
-
-    const Eigen::MatrixXd& perm = _process_data._material->getPermeability(
-        material_id, t, pos, _element.getDimension());
-    assert(perm.rows() == _element.getDimension() || perm.rows() == 1);
-    GlobalDimMatrixType permeability = GlobalDimMatrixType::Zero(
-        _element.getDimension(), _element.getDimension());
-    if (perm.rows() == _element.getDimension())
-    {
-        permeability = perm;
-    }
-    else if (perm.rows() == 1)
-    {
-        permeability.diagonal().setConstant(perm(0, 0));
-    }
 
     auto const& medium = *_process_data.medium_map->getMedium(_element.getID());
     auto const& liquid_phase = medium.phase("AqueousLiquid");
     auto const& gas_phase = medium.phase("Gas");
     MaterialPropertyLib::VariableArray variables;
+
+    TwoPhaseFlowWithPrhoConstitutiveLaw constitutive_law;
 
     double const temperature =
         medium
@@ -146,19 +133,12 @@ void TwoPhaseFlowWithPrhoLocalAssembler<
         double& dSwdrho = _ip_data[ip].dsw_drho;
         double& drhoh2wet = _ip_data[ip].drhom_dpg;
         double& drhoh2wet_drho = _ip_data[ip].drhom_drho;
-        if (!_ip_data[ip].mat_property.computeConstitutiveRelation(
-                t,
-                pos,
-                material_id,
-                pl_int_pt,
-                totalrho_int_pt,
-                temperature,
-                Sw,
-                rho_h2_wet,
-                dSwdP,
-                dSwdrho,
-                drhoh2wet,
-                drhoh2wet_drho))
+        if (!constitutive_law.compute(
+                t, dt, pos,
+                medium.property(
+                    MaterialPropertyLib::PropertyType::capillary_pressure),
+                variables, pl_int_pt, totalrho_int_pt, temperature, Sw,
+                rho_h2_wet, dSwdP, dSwdrho, drhoh2wet, drhoh2wet_drho))
         {
             OGS_FATAL("Computation of local constitutive relation failed.");
         }
@@ -213,6 +193,10 @@ void TwoPhaseFlowWithPrhoLocalAssembler<
                                 .template value<double>(variables, pos, t, dt);
 
         auto const lambda_wet = k_rel_wet / mu_wet;
+
+        auto const permeability = MPL::formEigenTensor<GlobalDim>(
+            medium.property(MPL::PropertyType::permeability)
+                .template value<double>(variables, pos, t, dt));
 
         laplace_operator.noalias() = sm.dNdx.transpose() * permeability *
                                      sm.dNdx * _ip_data[ip].integration_weight;

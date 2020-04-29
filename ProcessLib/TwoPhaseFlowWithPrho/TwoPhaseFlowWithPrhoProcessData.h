@@ -10,15 +10,13 @@
 
 #pragma once
 
-#include "TwoPhaseFlowWithPrhoMaterialProperties.h"
-
 #include "MaterialLib/MPL/MaterialSpatialDistributionMap.h"
 
-namespace ProcessLib
-{
 template <typename T>
 struct Parameter;
 
+namespace ProcessLib
+{
 namespace TwoPhaseFlowWithPrho
 {
 struct TwoPhaseFlowWithPrhoProcessData
@@ -29,8 +27,6 @@ struct TwoPhaseFlowWithPrhoProcessData
     bool const _has_mass_lumping;
     ParameterLib::Parameter<double> const& _diffusion_coeff_component_b;
     ParameterLib::Parameter<double> const& _diffusion_coeff_component_a;
-    ParameterLib::Parameter<double> const& _temperature;
-    std::unique_ptr<TwoPhaseFlowWithPrhoMaterialProperties> _material;
 
     std::unique_ptr<MaterialPropertyLib::MaterialSpatialDistributionMap>
         medium_map;
