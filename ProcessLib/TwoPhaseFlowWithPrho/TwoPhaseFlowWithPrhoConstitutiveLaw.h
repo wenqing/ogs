@@ -38,7 +38,7 @@ public:
                  ParameterLib::SpatialPosition const& pos,
                  MaterialPropertyLib::Property const& capillary_pressure,
                  MaterialPropertyLib::VariableArray& variables,
-                 double const pg,
+                 double const pl,
                  double const X,
                  double const T,
                  double& Sw,
@@ -57,8 +57,8 @@ private:
     using UnknownVector = Eigen::Matrix<double, jacobian_residual_size, 1>;
 
     /**
-    * Calculates the residual vector.
-    */
+     * Calculates the residual vector.
+     */
     void calculateResidual(
         double const t, double const dt,
         ParameterLib::SpatialPosition const& pos,
@@ -67,8 +67,8 @@ private:
         double const X, double const T, double Sw, double rho_h2_wet,
         ResidualVector& res);
     /**
-    * Calculates the Jacobian.
-    */
+     * Calculates the Jacobian.
+     */
     void calculateJacobian(
         double const t, double const dt,
         ParameterLib::SpatialPosition const& pos,
@@ -77,54 +77,37 @@ private:
         double const X, double const T, JacobianMatrix& Jac, double Sw,
         double rho_h2_wet);
     /** Complementary condition 1
-    * for calculating molar fraction of light component in the liquid phase
-    */
+     * for calculating molar fraction of light component in the liquid phase
+     */
     double calculateEquilibiumRhoWetLight(double const pg, double const Sw,
                                           double const rho_wet_h2) const;
     /** Complementary condition 2
-    * for calculating the saturation
-    */
-    double calculateSaturation(double /*PL*/, double X, double Sw,
-                               double rho_wet_h2, double rho_nonwet_h2,
-                               double /*T*/) const;
+     * for calculating the saturation
+     */
+    double calculateSaturation(double const X, double const Sw,
+                               double const rho_wet_h2,
+                               double const rho_nonwet_h2) const;
     /**
-    * Calculate the derivatives using the analytical way
-    */
-    double calculatedSwdP(
-        double const t, double const dt,
-        ParameterLib::SpatialPosition const& pos,
-        MaterialPropertyLib::Property const& capillary_pressure,
-        MaterialPropertyLib::VariableArray& variables, double pl, double S,
-        double rho_wet_h2, double const T) const;
+     * Calculate the derivatives using the analytical way
+     */
+    double calculatedSwdP(double const pg, double const Sw, const double dPcdSw,
+                          double rho_wet_h2, double const T) const;
     /**
-    * Calculate the derivatives using the analytical way
-    */
-    double calculatedSwdX(
-        double const t, double const dt,
-        ParameterLib::SpatialPosition const& pos,
-        MaterialPropertyLib::Property const& capillary_pressure,
-        MaterialPropertyLib::VariableArray& variables, double const pl,
-        const double /*X*/, const double S, const double rho_wet_h2,
-        double const T) const;
+     * Calculate the derivatives using the analytical way
+     */
+    double calculatedSwdX(double const pg, const double Sw, const double dPcdSw,
+                          const double rho_wet_h2, double const T) const;
     /**
-    * Calculate the derivatives using the analytical way
-    */
-    double calculatedXmdX(
-        double const t, double const dt,
-        ParameterLib::SpatialPosition const& pos,
-        MaterialPropertyLib::Property const& capillary_pressure,
-        MaterialPropertyLib::VariableArray& variables, double pl, double Sw,
-        double rho_wet_h2, double dSwdX) const;
+     * Calculate the derivatives using the analytical way
+     */
+    double calculatedXmdX(double const pg, double const Sw, const double dPcdSw,
+                          double rho_wet_h2, double dSwdX) const;
     /**
-    * Calculate the derivatives using the analytical way
-    */
-    double calculatedXmdP(
-        double const t, double const dt,
-        ParameterLib::SpatialPosition const& pos,
-        MaterialPropertyLib::Property const& capillary_pressure,
-        MaterialPropertyLib::VariableArray& variables, double pl, double Sw,
-        double rho_wet_h2, double dSwdP) const;
+     * Calculate the derivatives using the analytical way
+     */
+    double calculatedXmdP(double const pg, double const Sw, const double dPcdSw,
+                          double rho_wet_h2, double dSwdP) const;
 };
 
-}  // namespace ProcessLib::TwoPhaseFlowWithPrho
+}  // namespace TwoPhaseFlowWithPrho
 }  // namespace ProcessLib

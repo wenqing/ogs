@@ -30,7 +30,7 @@ bool TwoPhaseFlowWithPrhoConstitutiveLaw::compute(
     ParameterLib::SpatialPosition const& pos,
     MaterialPropertyLib::Property const& capillary_pressure,
     MaterialPropertyLib::VariableArray& variables,
-    double const pg,
+    double const pl,
     double const X,
     double const T,
     double& Sw,
@@ -49,12 +49,12 @@ bool TwoPhaseFlowWithPrhoConstitutiveLaw::compute(
 
         Eigen::PartialPivLU<LocalJacobianMatrix> linear_solver(2);
         auto const update_residual = [&](LocalResidualVector& residual) {
-            calculateResidual(t, dt, pos, capillary_pressure, variables, pg, X,
+            calculateResidual(t, dt, pos, capillary_pressure, variables, pl, X,
                               T, Sw, X_m, residual);
         };
 
         auto const update_jacobian = [&](LocalJacobianMatrix& jacobian) {
-            calculateJacobian(t, dt, pos, capillary_pressure, variables, pg, X,
+            calculateJacobian(t, dt, pos, capillary_pressure, variables, pl, X,
                               T, jacobian, Sw,
                               X_m);  // for solution dependent Jacobians
         };
@@ -85,14 +85,20 @@ bool TwoPhaseFlowWithPrhoConstitutiveLaw::compute(
             return false;
         }
     }
-    dsw_dpg = calculatedSwdP(t, dt, pos, capillary_pressure, variables, pg, Sw,
-                             X_m, T);
-    dsw_dX = calculatedSwdX(t, dt, pos, capillary_pressure, variables, pg, X,
-                            Sw, X_m, T);
-    dxm_dpg = calculatedXmdP(t, dt, pos, capillary_pressure, variables, pg, Sw,
-                             X_m, dsw_dpg);
-    dxm_dX = calculatedXmdX(t, dt, pos, capillary_pressure, variables, pg, Sw,
-                            X_m, dsw_dX);
+
+    variables[static_cast<int>(
+        MaterialPropertyLib::Variable::liquid_saturation)] = Sw;
+
+    const double pg =
+        pl + capillary_pressure.value<double>(variables, pos, t, dt);
+    double const dPC_dSw = capillary_pressure.dValue<double>(
+        variables, MaterialPropertyLib::Variable::liquid_saturation, pos, t,
+        dt);
+
+    dsw_dpg = calculatedSwdP(pg, Sw, dPC_dSw, X_m, T);
+    dsw_dX = calculatedSwdX(pg, Sw, dPC_dSw, X_m, T);
+    dxm_dpg = calculatedXmdP(pg, Sw, dPC_dSw, X_m, dsw_dpg);
+    dxm_dX = calculatedXmdX(pg, Sw, dPC_dSw, X_m, dsw_dX);
     return true;
 }
 void TwoPhaseFlowWithPrhoConstitutiveLaw::calculateResidual(
@@ -111,7 +117,7 @@ void TwoPhaseFlowWithPrhoConstitutiveLaw::calculateResidual(
 
     // calculating residual
     res(0) = calculateEquilibiumRhoWetLight(pg, Sw, rho_h2_wet);
-    res(1) = calculateSaturation(pl, X, Sw, rho_h2_wet, rho_h2_nonwet, T);
+    res(1) = calculateSaturation(X, Sw, rho_h2_wet, rho_h2_nonwet);
 }
 
 void TwoPhaseFlowWithPrhoConstitutiveLaw::calculateJacobian(
@@ -155,87 +161,57 @@ double TwoPhaseFlowWithPrhoConstitutiveLaw::calculateEquilibiumRhoWetLight(
 }
 
 double TwoPhaseFlowWithPrhoConstitutiveLaw::calculateSaturation(
-    double /*PL*/, double X, double Sw, double rho_wet_h2, double rho_nonwet_h2,
-    double /*T*/) const
+    double const X, double const Sw, double const rho_wet_h2,
+    double const rho_nonwet_h2) const
 {
     return X - (Sw * rho_wet_h2 + (1 - Sw) * rho_nonwet_h2);
 }
 
-double TwoPhaseFlowWithPrhoConstitutiveLaw::calculatedSwdP(
-    double const t, double const dt, ParameterLib::SpatialPosition const& pos,
-    MaterialPropertyLib::Property const& capillary_pressure,
-    MaterialPropertyLib::VariableArray& variables, double pl, double S,
-    double rho_wet_h2, double const T) const
+double TwoPhaseFlowWithPrhoConstitutiveLaw::calculatedSwdP(double const pg,
+                                                           double const Sw,
+                                                           const double dPC_dSw,
+                                                           double rho_wet_h2,
+                                                           double const T) const
 {
-    variables[static_cast<int>(
-        MaterialPropertyLib::Variable::liquid_saturation)] = S;
-
-    const double pg =
-        pl + capillary_pressure.value<double>(variables, pos, t, dt);
-
     double const rho_equilibrium_wet_h2 = pg * HenryConstantH2 * H2;
-    if ((1 - S) < (rho_equilibrium_wet_h2 - rho_wet_h2))
+    if ((1 - Sw) < (rho_equilibrium_wet_h2 - rho_wet_h2))
     {
         return 0.0;
     }
     double const drhoh2wet_dpg = HenryConstantH2 * H2;
     double const drhoh2nonwet_dpg = H2 / IdealGasConstant / T;
     double const alpha =
-        ((drhoh2nonwet_dpg - drhoh2wet_dpg) * (1 - S) + drhoh2wet_dpg);
+        ((drhoh2nonwet_dpg - drhoh2wet_dpg) * (1 - Sw) + drhoh2wet_dpg);
     double const beta = (drhoh2nonwet_dpg - drhoh2wet_dpg) *
                         pg;  // NOTE here should be PG^h, but we ignore vapor
-    double const dPC_dSw = capillary_pressure.dValue<double>(
-        variables, MaterialPropertyLib::Variable::liquid_saturation, pos, t,
-        dt);
     return alpha / (beta - alpha * dPC_dSw);
 }
 
 double TwoPhaseFlowWithPrhoConstitutiveLaw::calculatedSwdX(
-    double const t, double const dt, ParameterLib::SpatialPosition const& pos,
-    MaterialPropertyLib::Property const& capillary_pressure,
-    MaterialPropertyLib::VariableArray& variables, double const pl,
-    const double /*X*/, const double S, const double rho_wet_h2,
-    double const T) const
+    double const pg, const double Sw, double const dPC_dSw,
+    const double rho_wet_h2, double const T) const
 {
-    variables[static_cast<int>(
-        MaterialPropertyLib::Variable::liquid_saturation)] = S;
-
-    const double pg =
-        pl + capillary_pressure.value<double>(variables, pos, t, dt);
     double const rho_equilibrium_wet_h2 = pg * HenryConstantH2 * H2;
-    if ((1 - S) < (rho_equilibrium_wet_h2 - rho_wet_h2))
+    if ((1 - Sw) < (rho_equilibrium_wet_h2 - rho_wet_h2))
     {
         return 0.0;
     }
     double const drhoh2wet_dpg = HenryConstantH2 * H2;
     double const drhoh2nonwet_dpg = H2 / IdealGasConstant / T;
     double const alpha =
-        ((drhoh2nonwet_dpg - drhoh2wet_dpg) * (1 - S) + drhoh2wet_dpg);
+        ((drhoh2nonwet_dpg - drhoh2wet_dpg) * (1 - Sw) + drhoh2wet_dpg);
     double const beta = (drhoh2nonwet_dpg - drhoh2wet_dpg) *
                         pg;  // NOTE here should be PG^h, but we ignore vapor
-    double const dPC_dSw = capillary_pressure.dValue<double>(
-        variables, MaterialPropertyLib::Variable::liquid_saturation, pos, t,
-        dt);
     return -1 / (beta - alpha * dPC_dSw);
 }
 
-double TwoPhaseFlowWithPrhoConstitutiveLaw::calculatedXmdX(
-    double const t, double const dt, ParameterLib::SpatialPosition const& pos,
-    MaterialPropertyLib::Property const& capillary_pressure,
-    MaterialPropertyLib::VariableArray& variables,
-
-    double pl, double Sw, double rho_wet_h2, double dSwdX) const
+double TwoPhaseFlowWithPrhoConstitutiveLaw::calculatedXmdX(double const pg,
+                                                           double const Sw,
+                                                           double const dPC_dSw,
+                                                           double rho_wet_h2,
+                                                           double dSwdX) const
 {
-    variables[static_cast<int>(
-        MaterialPropertyLib::Variable::liquid_saturation)] = Sw;
-
-    const double pg =
-        pl + capillary_pressure.value<double>(variables, pos, t, dt);
-
     double const rho_equilibrium_wet_h2 = pg * HenryConstantH2 * H2;
-    double const dPC_dSw = capillary_pressure.dValue<double>(
-        variables, MaterialPropertyLib::Variable::liquid_saturation, pos, t,
-        dt);
     if ((1 - Sw) < (rho_equilibrium_wet_h2 - rho_wet_h2))
     {
         return 1.0;
@@ -243,22 +219,13 @@ double TwoPhaseFlowWithPrhoConstitutiveLaw::calculatedXmdX(
     return HenryConstantH2 * H2 * dPC_dSw * dSwdX;
 }
 
-double TwoPhaseFlowWithPrhoConstitutiveLaw::calculatedXmdP(
-    double const t, double const dt, ParameterLib::SpatialPosition const& pos,
-    MaterialPropertyLib::Property const& capillary_pressure,
-    MaterialPropertyLib::VariableArray& variables,
-
-    double pl, double Sw, double rho_wet_h2, double dSwdP) const
+double TwoPhaseFlowWithPrhoConstitutiveLaw::calculatedXmdP(double const pg,
+                                                           double const Sw,
+                                                           double const dPC_dSw,
+                                                           double rho_wet_h2,
+                                                           double dSwdP) const
 {
-    variables[static_cast<int>(
-        MaterialPropertyLib::Variable::liquid_saturation)] = Sw;
-
-    const double pg =
-        pl + capillary_pressure.value<double>(variables, pos, t, dt);
     double const rho_equilibrium_wet_h2 = pg * HenryConstantH2 * H2;
-    double const dPC_dSw = capillary_pressure.dValue<double>(
-        variables, MaterialPropertyLib::Variable::liquid_saturation, pos, t,
-        dt);
     if ((1 - Sw) < (rho_equilibrium_wet_h2 - rho_wet_h2))
     {
         return 0.0;
