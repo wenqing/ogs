@@ -10,11 +10,13 @@
 
 #include "CreateBoundaryCondition.h"
 
+#include "BaseLib/Error.h"
 #include "BaseLib/TimeInterval.h"
 #include "BoundaryCondition.h"
 #include "BoundaryConditionConfig.h"
 #include "ConstraintDirichletBoundaryCondition.h"
 #include "CreateDirichletBoundaryConditionWithinTimeInterval.h"
+#include "CreateReleaseNodalForce.h"
 #include "DirichletBoundaryCondition.h"
 #include "HCNonAdvectiveFreeComponentFlowBoundaryCondition.h"
 #include "NeumannBoundaryCondition.h"
@@ -55,7 +57,8 @@ std::unique_ptr<BoundaryCondition> createBoundaryCondition(
     //! \ogs_file_param{prj__process_variables__process_variable__boundary_conditions__boundary_condition__type}
     auto const type = config.config.peekConfigParameter<std::string>("type");
 
-    if (bool const component_id_required = type != "NormalTraction";
+    if (bool const component_id_required =
+            !(type == "NormalTraction" || type == "ReleaseNodalForce");
         component_id_required && !config.component_id.has_value())
     {
         OGS_FATAL(
@@ -172,6 +175,20 @@ std::unique_ptr<BoundaryCondition> createBoundaryCondition(
                 //! \ogs_file_param_special{prj__process_variables__process_variable__boundary_conditions__boundary_condition__PhaseFieldIrreversibleDamageOracleBoundaryCondition}
                 config.config, dof_table, bulk_mesh, variable_id,
                 *config.component_id);
+    }
+    if (type == "ReleaseNodalForce")
+    {
+        if (!config.compensate_non_equilibrium_initial_residuum)
+        {
+            OGS_FATAL(
+                "Did you set compensate_non_equilibrium_initial_residuum to "
+                "true? It is required for the ReleaseNodalForce boundary "
+                "condition.");
+        }
+        return ProcessLib::createReleaseNodalForce(
+            //! \ogs_file_param_special{prj__process_variables__process_variable__boundary_conditions__boundary_condition__ReleaseNodalForce}
+            bulk_mesh.getDimension(), variable_id, config.config,
+            config.boundary_mesh, dof_table, parameters);
     }
     OGS_FATAL("Unknown boundary condition type: `{:s}'.", type);
 }
