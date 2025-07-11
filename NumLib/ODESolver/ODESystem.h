@@ -56,6 +56,11 @@ public:
         return {};
     }
 
+    virtual void setReleaseNodalForces(GlobalVector const* /*r_neq*/,
+                                       int const /*process_id*/)
+    {
+    }
+
     //! Assemble \c M, \c K and \c b at the provided state (\c t, \c x).
     virtual void assemble(const double t, double const dt,
                           std::vector<GlobalVector*> const& x,
@@ -76,7 +81,7 @@ public:
 
     virtual void updateConstraints(GlobalVector& /*lower*/,
                                    GlobalVector& /*upper*/,
-                                   int const /*process_id*/){};
+                                   int const /*process_id*/) {};
 
     //! Indicates whether the assembled matrices change only upon timestep
     //! change. This enables some optimizations in the linear solver, but the
