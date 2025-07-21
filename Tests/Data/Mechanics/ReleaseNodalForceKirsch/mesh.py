@@ -1,9 +1,9 @@
 # %%
-import math
 from pathlib import Path
+
 import gmsh
-import sys
 import ogstools as ot
+import pyvista as pv
 
 
 # %%
@@ -16,7 +16,7 @@ class MeshGenerator:
         if not gmsh.isInitialized():
             gmsh.initialize()
 
-        self.out_dir = Path("")
+        self.out_dir = None
 
         # Parameters
         L = 70  # Square size
@@ -74,8 +74,8 @@ class MeshGenerator:
 
         # --- Transfinite setup ---
         # Define transfinite curves (divisions based on geometry and smoothness)
-        n_arc = 30  # number of divisions on arc
-        n_side = 60  # for square edges
+        n_arc = 20  # number of divisions on arc
+        n_side = 50  # for square edges
 
         gmsh.model.geo.mesh.setTransfiniteCurve(arc1, n_arc)
         gmsh.model.geo.mesh.setTransfiniteCurve(arc2, n_arc)
@@ -92,20 +92,51 @@ class MeshGenerator:
         self.gmsh_model.geo.synchronize()
 
     def generate_bulk_mesh(self, with_cavern=False):
-        self.gmsh_model.removePhysicalGroups()
-
         surfaces = self.surfaces
         if with_cavern:
             surfaces.append(self.surface3)
-
-        self.gmsh_model.addPhysicalGroup(2, surfaces, 1, "domain")
 
         # --- Mesh generation ---
         self.gmsh_model.mesh.generate(2)
 
         # Optional GUI
-        if "-nopopup" not in sys.argv:
-            gmsh.fltk.run()
+        # if "-nopopup" not in sys.argv:
+        #    gmsh.fltk.run()
+
+    def generate_meshes(self, out_dir="", order=1, with_cavern=False):
+        self.out_dir = Path(out_dir)
+        if not self.out_dir.exists():
+            self.out_dir.mkdir(parents=True)
+
+        gmsh.option.setNumber("Mesh.Algorithm", 5)
+        gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 0.5)
+        gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 10)
+        gmsh.option.setNumber("Mesh.CharacteristicLengthFromCurvature", 1)
+        gmsh.option.setNumber("Mesh.Format", 1)
+
+        # ot.cli().NodeReordering does not work for higher order elements generated from Gmsh
+        # gmsh.option.setNumber("Mesh.ElementOrder", order)
+        # gmsh.option.setNumber("Mesh.HighOrderOptimize", order)
+
+        self.generate_bulk_mesh(with_cavern)
+
+        self.gmsh_model.removePhysicalGroups()
+        bulk_mesh_name = "domain"
+        self.gmsh_model.addPhysicalGroup(2, self.surfaces, 1, name=bulk_mesh_name)
+        bulk_mesh_name = Path(self.out_dir, bulk_mesh_name + ".vtu")
+
+        mesh_dim = 1
+        self.gmsh_model.addPhysicalGroup(mesh_dim, self.tunnel_boundary, name="arc")
+        left_boundary = self.left_boundary
+        bottom_boundary = self.bottom_boundary
+        if with_cavern:
+            left_boundary.append(self.left_hole)
+            bottom_boundary.append(self.bottom_hole)
+
+        self.gmsh_model.addPhysicalGroup(mesh_dim, left_boundary, name="left")
+        self.gmsh_model.addPhysicalGroup(mesh_dim, bottom_boundary, name="bottom")
+        self.gmsh_model.addPhysicalGroup(mesh_dim, self.top_boundary, name="top")
+        self.gmsh_model.addPhysicalGroup(mesh_dim, self.right_boundary, name="right")
 
         # Set output format to MSH2
         gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
@@ -113,78 +144,36 @@ class MeshGenerator:
         mesh_file_name = Path(self.out_dir, mesh_name)
         gmsh.write(str(mesh_file_name))
 
-        return mesh_file_name
+        meshes = ot.meshes_from_gmsh(
+            filename=str(mesh_file_name), dim=[1], reindex=True, log=False
+        )
 
-    def generate_boundary(self, mesh_name, entity_list, mesh_dim=1):
-        self.gmsh_model.removePhysicalGroups()
-        self.gmsh_model.addPhysicalGroup(mesh_dim, entity_list, 1, mesh_name)
+        vtu_names = []
+        for name, mesh in meshes.items():
+            print(f"{name}: {mesh.n_cells} cells")
+            if "physical_group_" in name:
+                vtu_name = Path(
+                    self.out_dir, f"{name.replace('physical_group_', '')}.vtu"
+                )
+                vtu_names.append(vtu_name)
+                pv.save_meshio(vtu_name, mesh)
 
-        # --- Mesh generation ---
-        self.gmsh_model.mesh.generate(2)
+        ot.cli().NodeReordering("-i", bulk_mesh_name, "-o", bulk_mesh_name)
+        if order == 2:
+            print(f"Create quadratic mesh for {bulk_mesh_name}")
+            ot.cli().createQuadraticMesh("-i", bulk_mesh_name, "-o", bulk_mesh_name)
 
-        # Set output format to MSH2
-        gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
-        mesh_file_name = Path(self.out_dir, f"{mesh_name}.msh")
-        gmsh.write(str(mesh_file_name))
-
-        return mesh_file_name
-
-    def generate_meshes(self, out_dir="", with_cavern=False):
-        self.out_dir = Path(out_dir)
-        if not self.out_dir.exists():
-            self.out_dir.mkdir(parents=True)
-
-        mesh_file_names = []
-        mesh_file_names.append(self.generate_bulk_mesh(with_cavern))
-
-        left_boundary = self.left_boundary
-        bottom_boundary = self.bottom_boundary
-        if with_cavern:
-            print("========================")
-            left_boundary.append(self.left_hole)
-            bottom_boundary.append(self.bottom_hole)
-
-        mesh_file_names.append(self.generate_boundary("arc", self.tunnel_boundary))
-        mesh_file_names.append(self.generate_boundary("left", left_boundary))
-        mesh_file_names.append(self.generate_boundary("bottom", bottom_boundary))
-        mesh_file_names.append(self.generate_boundary("top", self.top_boundary))
-        mesh_file_names.append(self.generate_boundary("right", self.right_boundary))
-
-        bulk_mesh_vtu = f"{str(mesh_file_names[0]).split('.')[0]}.vtu"
-        for i, mesh_file in enumerate(mesh_file_names):
-            vtu_file_name = f"{str(mesh_file).split('.')[0]}.vtu"
-            print(vtu_file_name)
-            ot.cli().GMSH2OGS("-i", mesh_file, "-o", vtu_file_name)
-            if i == 0:  # only for bulk mesh
-                ot.cli().NodeReordering("-i", vtu_file_name, "-o", vtu_file_name)
+        for vtu_file_name in vtu_names:
+            if order == 2 and vtu_file_name != bulk_mesh_name:
+                print(f"Create quadratic mesh for {vtu_file_name}")
+                ot.cli().createQuadraticMesh("-i", vtu_file_name, "-o", vtu_file_name)
 
             ot.cli().identifySubdomains(
                 "-m",
-                bulk_mesh_vtu,
+                bulk_mesh_name,
                 f"-o {self.out_dir}/",
                 "-f",
                 "-s 1e-6",
                 "--",
                 vtu_file_name,
             )
-
-
-# %%
-if not gmsh.isInitialized():
-    gmsh.initialize()
-
-gmsh.model.add("Mesh")
-gmsh.option.setNumber("Mesh.Algorithm", 5)
-gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 0.4)
-gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 10)
-gmsh.option.setNumber("Mesh.CharacteristicLengthFromCurvature", 1)
-gmsh.option.setNumber("Mesh.Format", 1)
-
-mesh_generator = MeshGenerator(gmsh_model=gmsh.model)
-# mesh_generator.generate_meshes(out_dir = Path("output", "no_cavern"))
-mesh_generator.generate_meshes(out_dir=Path("output"), with_cavern=True)
-
-
-gmsh.finalize()
-
-# %%
