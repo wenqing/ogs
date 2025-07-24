@@ -150,7 +150,6 @@
             <components>2</components>
             <order>2</order>
             <initial_condition>initial_displacement</initial_condition>
-            <compensate_non_equilibrium_initial_residuum>true</compensate_non_equilibrium_initial_residuum>
             <boundary_conditions>
                 <boundary_condition>
                     <mesh>left</mesh>

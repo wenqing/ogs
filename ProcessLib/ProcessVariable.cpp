@@ -13,6 +13,10 @@
 #include <algorithm>
 #include <utility>
 
+#ifdef USE_PETSC
+#include "BaseLib/MPI.h"
+#endif
+
 #include "BaseLib/Algorithm.h"
 #include "BaseLib/Logging.h"
 #include "MeshGeoToolsLib/ConstructMeshesFromGeometries.h"
@@ -245,11 +249,31 @@ ProcessVariable::createBoundaryConditions(
             _shapefunction_order, parameters, process,
             all_process_variables_for_this_process, media);
 #ifdef USE_PETSC
+        bool const compensation_flag =
+            allreduce(config.compensate_non_equilibrium_initial_residuum,
+                      MPI_LOR, BaseLib::MPI::Mpi{});
+#else
+        bool const compensation_flag =
+            config.compensate_non_equilibrium_initial_residuum;
+#endif  // USE_PETSC
+
+        // If the boundary condition is ReleaseNodalForce, the initial
+        // condition must be compensated. The flag
+        // config.compensate_non_equilibrium_initial_residuum is set during
+        // creation, and here we update the member
+        // _compensate_non_equilibrium_initial_residuum accordingly.        if
+        if (compensation_flag)
+        {
+            _compensate_non_equilibrium_initial_residuum = compensation_flag;
+        }
+
+#ifdef USE_PETSC
         if (bc == nullptr)
         {
             continue;
         }
 #endif  // USE_PETSC
+
         bcs.push_back(std::move(bc));
     }
 

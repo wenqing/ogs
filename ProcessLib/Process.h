@@ -352,7 +352,7 @@ protected:
     getIndicesOfResiduumWithoutInitialCompensation() const override;
 
     /// It is used to set the release nodal forces for boundary condition
-    /// `ReleasedNodalForce` in excavation modelling using the computed
+    /// `ReleaseNodalForce` in excavation modelling using the computed
     /// non-equilibrium residuum. This function is called by
     /// `NonlinearSolver::calculateNonEquilibriumInitialResiduum`.
     void setReleaseNodalForces(GlobalVector const* r_neq,

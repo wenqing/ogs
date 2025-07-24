@@ -163,7 +163,7 @@ private:
     std::vector<BoundaryConditionConfig> _bc_configs;
     std::vector<SourceTermConfig> _source_term_configs;
 
-    const bool _compensate_non_equilibrium_initial_residuum;
+    mutable bool _compensate_non_equilibrium_initial_residuum;
 };
 
 }  // namespace ProcessLib

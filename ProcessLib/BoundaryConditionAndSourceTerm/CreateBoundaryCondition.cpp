@@ -180,9 +180,10 @@ std::unique_ptr<BoundaryCondition> createBoundaryCondition(
     {
         if (!config.compensate_non_equilibrium_initial_residuum)
         {
-            OGS_FATAL(
-                "Did you set compensate_non_equilibrium_initial_residuum to "
-                "true? It is required for the ReleaseNodalForce boundary "
+            config.compensate_non_equilibrium_initial_residuum = true;
+            WARN(
+                "Set compensate_non_equilibrium_initial_residuum to "
+                "true. It is required for the ReleaseNodalForce boundary "
                 "condition.");
         }
         return ProcessLib::createReleaseNodalForce(
