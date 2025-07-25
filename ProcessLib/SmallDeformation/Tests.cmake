@@ -374,3 +374,29 @@ NotebookTest(
     SKIP_WEB
 )
 OgsTest(PROJECTFILE Mechanics/Linear/test_ip_data/square_1e2_test_ip_data.prj)
+
+AddTest(
+    NAME ParallelFEM_SmallMechanics_kirsch_release_nodal_force
+    PATH Mechanics/ReleaseNodalForceKirsch
+    RUNTIME 30
+    EXECUTABLE ogs
+    EXECUTABLE_ARGS kirsch.prj
+    WRAPPER mpirun
+    WRAPPER_ARGS -np 3
+    TESTER vtkdiff
+    REQUIREMENTS OGS_USE_MPI
+    LABELS "petsc-mumps"
+    DIFF_DATA
+#
+    kirsch_ts_21_t_345600_000000_0.vtu kirsch_ts_21_t_345600_000000_0.vtu displacement displacement 1e-10 1.0e-9
+    kirsch_ts_21_t_345600_000000_0.vtu kirsch_ts_21_t_345600_000000_0.vtu epsilon epsilon 1e-10 1.0e-9
+    kirsch_ts_21_t_345600_000000_0.vtu kirsch_ts_21_t_345600_000000_0.vtu sigma sigma 1e-10 1.0e-6
+#
+    kirsch_ts_21_t_345600_000000_1.vtu kirsch_ts_21_t_345600_000000_1.vtu displacement displacement 1e-10 1.0e-9
+    kirsch_ts_21_t_345600_000000_1.vtu kirsch_ts_21_t_345600_000000_1.vtu epsilon epsilon 1e-10 1.0e-9
+    kirsch_ts_21_t_345600_000000_1.vtu kirsch_ts_21_t_345600_000000_1.vtu sigma sigma 1e-10 1.0e-6
+#
+    kirsch_ts_21_t_345600_000000_2.vtu kirsch_ts_21_t_345600_000000_2.vtu displacement displacement 1e-10 1.0e-9
+    kirsch_ts_21_t_345600_000000_2.vtu kirsch_ts_21_t_345600_000000_2.vtu epsilon epsilon 1e-10 1.0e-9
+    kirsch_ts_21_t_345600_000000_2.vtu kirsch_ts_21_t_345600_000000_2.vtu sigma sigma 1e-10 1.0e-6
+)
