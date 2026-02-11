@@ -37,23 +37,26 @@ std::unique_ptr<Process> createThermoHydroMechanicsProcess(
     config.checkConfigParameter("type", "THERMO_HYDRO_MECHANICS");
     DBUG("Create ThermoHydroMechanicsProcess.");
 
-    auto const coupling_scheme =
+    auto const coupling_scheme = parseCouplingScheme(
         //! \ogs_file_param{prj__processes__process__THERMO_HYDRO_MECHANICS__coupling_scheme}
-        config.getConfigParameterOptional<std::string>("coupling_scheme");
-    const bool use_monolithic_scheme =
-        !(coupling_scheme && (*coupling_scheme == "staggered"));
+        config.getConfigSubtreeOptional("coupling_scheme"));
 
     /// \section processvariablesthm Process Variables
 
     //! \ogs_file_param{prj__processes__process__THERMO_HYDRO_MECHANICS__process_variables}
     auto const pv_config = config.getConfigSubtree("process_variables");
 
+    int thermal_process_id = 0;
+    int hydraulic_process_id = 0;
+    int mechanical_process_id = 0;
+
     ProcessVariable* variable_T;
     ProcessVariable* variable_p;
     ProcessVariable* variable_u;
     std::vector<std::vector<std::reference_wrapper<ProcessVariable>>>
         process_variables;
-    if (use_monolithic_scheme)  // monolithic scheme.
+    if (std::holds_alternative<Monolithic>(
+            coupling_scheme))  // monolithic scheme.
     {
         /// Primary process variables as they appear in the global component
         /// vector:
@@ -83,6 +86,9 @@ std::unique_ptr<Process> createThermoHydroMechanicsProcess(
         variable_T = &process_variables[0][0].get();
         variable_p = &process_variables[1][0].get();
         variable_u = &process_variables[2][0].get();
+        thermal_process_id = 0;
+        hydraulic_process_id = 1;
+        mechanical_process_id = 2;
     }
 
     if (variable_T->getShapeFunctionOrder() != 1)
@@ -184,7 +190,11 @@ std::unique_ptr<Process> createThermoHydroMechanicsProcess(
         std::move(ice_constitutive_relation),
         std::move(initial_stress),
         specific_body_force,
-        std::move(stabilizer)};
+        std::move(stabilizer),
+        std::move(coupling_scheme),
+        thermal_process_id,
+        hydraulic_process_id,
+        mechanical_process_id};
 
     SecondaryVariableCollection secondary_variables;
 
@@ -194,7 +204,7 @@ std::unique_ptr<Process> createThermoHydroMechanicsProcess(
         std::move(name), mesh, std::move(jacobian_assembler), parameters,
         integration_order, std::move(process_variables),
         std::move(process_data), std::move(secondary_variables),
-        use_monolithic_scheme, is_linear);
+        std::holds_alternative<Monolithic>(coupling_scheme), is_linear);
 }
 
 template std::unique_ptr<Process> createThermoHydroMechanicsProcess<2>(

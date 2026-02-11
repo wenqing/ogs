@@ -10,6 +10,7 @@
 #include "MaterialLib/MPL/MaterialSpatialDistributionMap.h"
 #include "NumLib/NumericalStability/NumericalStabilization.h"
 #include "ParameterLib/Parameter.h"
+#include "ProcessLib/Common/HydroMechanics/CouplingScheme.h"
 #include "ProcessLib/Common/HydroMechanics/InitialStress.h"
 
 namespace MaterialLib
@@ -24,6 +25,8 @@ namespace ProcessLib
 {
 namespace ThermoHydroMechanics
 {
+using namespace ProcessLib::Common::HydroMechanics;
+
 template <int DisplacementDim>
 struct ThermoHydroMechanicsProcessData
 {
@@ -50,12 +53,23 @@ struct ThermoHydroMechanicsProcessData
 
     NumLib::NumericalStabilization stabilizer;
 
+    CouplingScheme coupling_scheme;
+
+    int const thermal_process_id = 0;
+    int const hydraulic_process_id = 0;
+    int const mechanical_process_id = 0;
+
     MeshLib::PropertyVector<double>* element_phi_fr = nullptr;
     MeshLib::PropertyVector<double>* element_fluid_density = nullptr;
     MeshLib::PropertyVector<double>* element_viscosity = nullptr;
     MeshLib::PropertyVector<double>* element_stresses = nullptr;
     MeshLib::PropertyVector<double>* pressure_interpolated = nullptr;
     MeshLib::PropertyVector<double>* temperature_interpolated = nullptr;
+
+    bool isMonolithicSchemeUsed() const
+    {
+        return std::holds_alternative<Monolithic>(coupling_scheme);
+    }
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
