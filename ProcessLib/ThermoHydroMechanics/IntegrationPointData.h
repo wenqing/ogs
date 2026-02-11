@@ -69,6 +69,10 @@ struct IntegrationPointData final
 
     double porosity;
 
+    // previous pressure rate for the fixed stress splitting
+    // approach in the staggered scheme.
+    double strain_rate_variable = 0.0;
+
     void pushBackState()
     {
         eps0_prev = eps0;

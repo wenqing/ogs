@@ -1077,6 +1077,39 @@ template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure,
           int DisplacementDim>
 void ThermoHydroMechanicsLocalAssembler<
     ShapeFunctionDisplacement, ShapeFunctionPressure, DisplacementDim>::
+    postNonLinearSolverConcrete(Eigen::VectorXd const& local_x,
+                                Eigen::VectorXd const& local_x_prev,
+                                double const /*t*/, double const dt,
+                                int const process_id)
+{
+    auto const staggered_scheme_ptr =
+        std::get_if<Staggered>(&_process_data.coupling_scheme);
+    if (!(staggered_scheme_ptr &&
+          process_id == _process_data.hydraulic_process_id))
+    {
+        return;
+    }
+
+    if (!staggered_scheme_ptr->fixed_stress_over_time_step)
+    {
+        int const n_integration_points =
+            _integration_method.getNumberOfPoints();
+        auto const p = local_x.template segment<pressure_size>(pressure_index);
+        auto const p_prev =
+            local_x_prev.template segment<pressure_size>(pressure_index);
+        for (int ip = 0; ip < n_integration_points; ip++)
+        {
+            auto& ip_data = _ip_data[ip];
+            auto const& N = ip_data.N;
+            ip_data.strain_rate_variable = N.dot(p - p_prev) / dt;
+        }
+    }
+}
+
+template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure,
+          int DisplacementDim>
+void ThermoHydroMechanicsLocalAssembler<
+    ShapeFunctionDisplacement, ShapeFunctionPressure, DisplacementDim>::
     computeSecondaryVariableConcrete(double const /*t*/, double const /*dt*/,
                                      Eigen::VectorXd const& local_x,
                                      Eigen::VectorXd const& /*local_x_prev*/)

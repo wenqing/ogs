@@ -205,6 +205,11 @@ public:
         }
     }
 
+    void postNonLinearSolverConcrete(Eigen::VectorXd const& local_x,
+                                     Eigen::VectorXd const& local_x_prev,
+                                     double const t, double const dt,
+                                     int const process_id) override;
+
     void computeSecondaryVariableConcrete(
         double const t, double const dt, Eigen::VectorXd const& local_x,
         Eigen::VectorXd const& local_x_prev) override;
