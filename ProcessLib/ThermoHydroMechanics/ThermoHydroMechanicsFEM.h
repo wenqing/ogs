@@ -162,48 +162,7 @@ public:
     void postTimestepConcrete(Eigen::VectorXd const& local_x,
                               Eigen::VectorXd const& local_x_prev,
                               double const t, double const dt,
-                              int const /*process_id*/) override
-    {
-        unsigned const n_integration_points =
-            _integration_method.getNumberOfPoints();
-
-        auto const [T_prev, p_prev, u_prev] = localDOF(local_x_prev);
-
-        for (unsigned ip = 0; ip < n_integration_points; ip++)
-        {
-            auto& ip_data = _ip_data[ip];
-            auto const& N_u = ip_data.N_u;
-            auto const& dNdx_u = ip_data.dNdx_u;
-
-            ParameterLib::SpatialPosition const x_position{
-                std::nullopt, _element.getID(),
-                MathLib::Point3d(
-                    NumLib::interpolateCoordinates<
-                        ShapeFunctionDisplacement,
-                        ShapeMatricesTypeDisplacement>(_element, N_u))};
-
-            updateConstitutiveRelations(local_x, local_x_prev, x_position, t,
-                                        dt, _ip_data[ip], _ip_data_output[ip]);
-
-            auto const x_coord =
-                x_position.getCoordinates().value()[0];  // r for axisymmetry
-            auto const B = LinearBMatrix::computeBMatrix<
-                DisplacementDim, ShapeFunctionDisplacement::NPOINTS,
-                typename BMatricesType::BMatrixType>(dNdx_u, N_u, x_coord,
-                                                     _is_axially_symmetric);
-
-            ConstitutiveRelationsValues<DisplacementDim> crv;
-
-            MathLib::KelvinVector::KelvinVectorType<DisplacementDim> const
-                eps_prev = B * u_prev;
-
-            _ip_data[ip].eps0 =
-                _ip_data[ip].eps0_prev +
-                (1 - _ip_data[ip].phi_fr_prev / _ip_data[ip].porosity) *
-                    (eps_prev - _ip_data[ip].eps0_prev);
-            _ip_data[ip].pushBackState();
-        }
-    }
+                              int const /*process_id*/) override;
 
     void postNonLinearSolverConcrete(Eigen::VectorXd const& local_x,
                                      Eigen::VectorXd const& local_x_prev,
