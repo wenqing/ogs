@@ -1080,10 +1080,16 @@ void ThermoHydroMechanicsLocalAssembler<
     DisplacementDim>::postTimestepConcrete(Eigen::VectorXd const& local_x,
                                            Eigen::VectorXd const& local_x_prev,
                                            double const t, double const dt,
-                                           int const /*process_id*/)
+                                           int const process_id)
 {
     unsigned const n_integration_points =
         _integration_method.getNumberOfPoints();
+    auto const staggered_scheme_ptr =
+        std::get_if<Staggered>(&_process_data.coupling_scheme);
+    bool const use_fixed_stress_stabilization_over_time_step =
+        staggered_scheme_ptr &&
+        staggered_scheme_ptr->fixed_stress_over_time_step &&
+        process_id == _process_data.hydraulic_process_id;
 
     auto const [T_prev, p_prev, u_prev] = localDOF(local_x_prev);
 
@@ -1100,8 +1106,9 @@ void ThermoHydroMechanicsLocalAssembler<
                                                ShapeMatricesTypeDisplacement>(
                     _element, N_u))};
 
-        updateConstitutiveRelations(local_x, local_x_prev, x_position, t, dt,
-                                    _ip_data[ip], _ip_data_output[ip]);
+        auto const crv =
+            updateConstitutiveRelations(local_x, local_x_prev, x_position, t,
+                                        dt, _ip_data[ip], _ip_data_output[ip]);
 
         auto const x_coord =
             x_position.getCoordinates().value()[0];  // r for axisymmetry
@@ -1111,8 +1118,6 @@ void ThermoHydroMechanicsLocalAssembler<
                                           typename BMatricesType::BMatrixType>(
                 dNdx_u, N_u, x_coord, _is_axially_symmetric);
 
-        ConstitutiveRelationsValues<DisplacementDim> crv;
-
         MathLib::KelvinVector::KelvinVectorType<DisplacementDim> const
             eps_prev = B * u_prev;
 
@@ -1120,6 +1125,25 @@ void ThermoHydroMechanicsLocalAssembler<
             _ip_data[ip].eps0_prev +
             (1 - _ip_data[ip].phi_fr_prev / _ip_data[ip].porosity) *
                 (eps_prev - _ip_data[ip].eps0_prev);
+
+        if (use_fixed_stress_stabilization_over_time_step)
+        {
+            auto const alpha_b = crv.alpha_biot;
+            auto const K_S =
+                ip_data.solid_material.getBulkModulus(t, x_position, &crv.C);
+            auto const fixed_stress_stabilization_parameter =
+                staggered_scheme_ptr->fixed_stress_stabilization_parameter;
+            auto const u =
+                local_x.template segment<displacement_size>(displacement_index);
+            auto const p =
+                local_x.template segment<pressure_size>(pressure_index);
+
+            ip_data.strain_rate_variable =
+                (Invariants::trace(B * u) - Invariants::trace(eps_prev)) / dt -
+                fixed_stress_stabilization_parameter * alpha_b *
+                    ip_data.N.dot(p - p_prev) / dt / K_S;
+        }
+
         _ip_data[ip].pushBackState();
     }
 }
