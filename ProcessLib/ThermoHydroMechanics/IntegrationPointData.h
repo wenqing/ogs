@@ -287,5 +287,22 @@ struct ConstitutiveRelationsValues
     MathLib::KelvinVector::KelvinVectorType<DisplacementDim> r_u_fr;
 };
 
+template <int DisplacementDim>
+struct ThermalConstitutiveRelationsValues
+{
+    using DimMatrix =
+        typename MatrixPolicyType::MatrixType<DisplacementDim, DisplacementDim>;
+    using DimVector = MatrixPolicyType::VectorType<DisplacementDim>;
+
+    DimMatrix K_pT_thermal_osmosis;
+    DimMatrix effective_thermal_conductivity;
+    DimMatrix dlambda_eff_dT;
+    DimVector dvelocity_dT = DimVector::Constant(
+        DisplacementDim, std::numeric_limits<double>::quiet_NaN());
+    double c_f;
+    double effective_volumetric_heat_capacity;
+    double drho_LR_dT;
+    double J_TT;
+};
 }  // namespace ThermoHydroMechanics
 }  // namespace ProcessLib
