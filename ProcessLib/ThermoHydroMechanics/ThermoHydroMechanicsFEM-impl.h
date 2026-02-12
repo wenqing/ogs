@@ -1019,6 +1019,78 @@ void ThermoHydroMechanicsLocalAssembler<
 
 template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure,
           int DisplacementDim>
+void ThermoHydroMechanicsLocalAssembler<
+    ShapeFunctionDisplacement, ShapeFunctionPressure, DisplacementDim>::
+    assembleWithJacobianForStaggeredScheme(const double t, double const dt,
+                                           Eigen::VectorXd const& local_x,
+                                           Eigen::VectorXd const& local_x_prev,
+                                           int const process_id,
+                                           std::vector<double>& local_b_data,
+                                           std::vector<double>& local_Jac_data)
+
+{
+    if (process_id == _process_data.thermal_process_id)
+    {
+        assembleWithJacobianForEnergyBalanceEquation(
+            t, dt, local_x, local_x_prev, local_b_data, local_Jac_data);
+        return;
+    }
+
+    if (process_id == _process_data.hydraulic_process_id)
+    {
+        assembleWithJacobianForMassBalanceEquation(
+            t, dt, local_x, local_x_prev, local_b_data, local_Jac_data);
+        return;
+    }
+
+    if (process_id == _process_data.mechanical_process_id)
+    {
+        assembleWithJacobianForMomentumBalanceEquation(
+            t, dt, local_x, local_x_prev, local_b_data, local_Jac_data);
+        return;
+    }
+
+    OGS_FATAL(
+        "The process id {0} is out of range for this staggered scheme "
+        "with 3 processes.",
+        process_id);
+}
+
+template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure,
+          int DisplacementDim>
+void ThermoHydroMechanicsLocalAssembler<
+    ShapeFunctionDisplacement, ShapeFunctionPressure, DisplacementDim>::
+    assembleWithJacobianForEnergyBalanceEquation(
+        const double t, double const dt, Eigen::VectorXd const& local_x,
+        Eigen::VectorXd const& local_x_prev, std::vector<double>& local_b_data,
+        std::vector<double>& local_Jac_data)
+{
+}
+
+template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure,
+          int DisplacementDim>
+void ThermoHydroMechanicsLocalAssembler<
+    ShapeFunctionDisplacement, ShapeFunctionPressure, DisplacementDim>::
+    assembleWithJacobianForMassBalanceEquation(
+        const double t, double const dt, Eigen::VectorXd const& local_x,
+        Eigen::VectorXd const& local_x_prev, std::vector<double>& local_b_data,
+        std::vector<double>& local_Jac_data)
+{
+}
+
+template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure,
+          int DisplacementDim>
+void ThermoHydroMechanicsLocalAssembler<
+    ShapeFunctionDisplacement, ShapeFunctionPressure, DisplacementDim>::
+    assembleWithJacobianForMomentumBalanceEquation(
+        const double t, double const dt, Eigen::VectorXd const& local_x,
+        Eigen::VectorXd const& local_x_prev, std::vector<double>& local_b_data,
+        std::vector<double>& local_Jac_data)
+{
+}
+
+template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure,
+          int DisplacementDim>
 std::vector<double> const& ThermoHydroMechanicsLocalAssembler<
     ShapeFunctionDisplacement, ShapeFunctionPressure, DisplacementDim>::
     getIntPtDarcyVelocity(

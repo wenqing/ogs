@@ -105,6 +105,12 @@ public:
                               std::vector<double>& local_rhs_data,
                               std::vector<double>& local_Jac_data) override;
 
+    void assembleWithJacobianForStaggeredScheme(
+        const double t, double const dt, Eigen::VectorXd const& local_x,
+        Eigen::VectorXd const& local_x_prev, int const process_id,
+        std::vector<double>& local_b_data,
+        std::vector<double>& local_Jac_data) override;
+
     void initializeConcrete() override
     {
         unsigned const n_integration_points =
@@ -392,6 +398,21 @@ private:
     static const int displacement_index = ShapeFunctionPressure::NPOINTS * 2;
     static const int displacement_size =
         ShapeFunctionDisplacement::NPOINTS * DisplacementDim;
+
+    void assembleWithJacobianForEnergyBalanceEquation(
+        const double t, double const dt, Eigen::VectorXd const& local_x,
+        Eigen::VectorXd const& local_x_prev, std::vector<double>& local_b_data,
+        std::vector<double>& local_Jac_data);
+
+    void assembleWithJacobianForMassBalanceEquation(
+        const double t, double const dt, Eigen::VectorXd const& local_x,
+        Eigen::VectorXd const& local_x_prev, std::vector<double>& local_b_data,
+        std::vector<double>& local_Jac_data);
+
+    void assembleWithJacobianForMomentumBalanceEquation(
+        const double t, double const dt, Eigen::VectorXd const& local_x,
+        Eigen::VectorXd const& local_x_prev, std::vector<double>& local_b_data,
+        std::vector<double>& local_Jac_data);
 };
 
 }  // namespace ThermoHydroMechanics
