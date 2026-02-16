@@ -304,5 +304,27 @@ struct ThermalPropertyValues
     double drho_LR_dT;
     double J_TT;
 };
+
+template <int DisplacementDim>
+struct HydraulicPropertyValues
+{
+    using DimMatrix =
+        typename MatrixPolicyType::MatrixType<DisplacementDim, DisplacementDim>;
+    using DimVector = MatrixPolicyType::VectorType<DisplacementDim>;
+
+    DimMatrix K_pT_thermal_osmosis;
+    DimMatrix K_over_mu;
+
+    double solid_skeleton_compressibility;
+    double eps_v_dot;
+    double alpha_biot;
+    double storage_T_fr;
+    double beta;
+    double k_rel;
+    double storage_p_fr;
+    double fluid_compressibility;
+    double beta_SR;
+};
+
 }  // namespace ThermoHydroMechanics
 }  // namespace ProcessLib

@@ -247,6 +247,13 @@ private:
         double const dt, IpData& ip_data,
         IntegrationPointDataForOutput<DisplacementDim>& ip_data_output) const;
 
+    HydraulicPropertyValues<DisplacementDim> updateHydraulicProperties(
+        Eigen::Ref<Eigen::VectorXd const> const local_x,
+        Eigen::Ref<Eigen::VectorXd const> const local_x_prev,
+        ParameterLib::SpatialPosition const& x_position, double const t,
+        double const dt, IpData& ip_data,
+        IntegrationPointDataForOutput<DisplacementDim>& ip_data_output) const;
+
     std::size_t setSigma(double const* values)
     {
         return ProcessLib::setIntegrationPointKelvinVectorData<DisplacementDim>(
