@@ -315,6 +315,9 @@ struct HydraulicPropertyValues
     DimMatrix K_pT_thermal_osmosis;
     DimMatrix K_over_mu;
 
+    double dot_p;
+    double dot_T;
+    double solid_volumetric_thermal_expansion_coefficient;
     double solid_skeleton_compressibility;
     double eps_v_dot;
     double alpha_biot;

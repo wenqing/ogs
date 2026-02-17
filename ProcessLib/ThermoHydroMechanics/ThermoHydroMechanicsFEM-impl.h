@@ -959,6 +959,9 @@ HydraulicPropertyValues<DisplacementDim> ThermoHydroMechanicsLocalAssembler<
     auto const T_int_pt = N.dot(T);
     auto const T_prev_int_pt = N.dot(T_prev);
     double const dT_int_pt = T_int_pt - T_prev_int_pt;
+    vars.temperature = T_int_pt;
+    double const p_int_pt = N.dot(p);
+    vars.liquid_phase_pressure = p_int_pt;
 
     auto const x_coord =
         x_position.getCoordinates().value()[0];  // r for axisymmetry
@@ -970,16 +973,14 @@ HydraulicPropertyValues<DisplacementDim> ThermoHydroMechanicsLocalAssembler<
 
     HydraulicPropertyValues<DisplacementDim> crv;
 
+    crv.dot_p = (p_int_pt - N.dot(p_prev)) / dt;
+
     auto& eps = ip_data.eps;
     eps.noalias() = B * u;
     MathLib::KelvinVector::KelvinVectorType<DisplacementDim> const eps_prev =
         B * u_prev;
     double const eps_v = Invariants::trace(eps);
     crv.eps_v_dot = (eps_v - Invariants::trace(eps_prev)) / dt;
-
-    vars.temperature = T_int_pt;
-    double const p_int_pt = N.dot(p);
-    vars.liquid_phase_pressure = p_int_pt;
 
     vars.liquid_saturation = 1.0;
 
@@ -1072,6 +1073,10 @@ HydraulicPropertyValues<DisplacementDim> ThermoHydroMechanicsLocalAssembler<
     MathLib::KelvinVector::KelvinVectorType<DisplacementDim> const
         dthermal_strain =
             solid_linear_thermal_expansion_coefficient * dT_int_pt;
+
+    crv.dot_T = dT_int_pt / dt;
+    crv.solid_volumetric_thermal_expansion_coefficient =
+        Invariants::trace(solid_linear_thermal_expansion_coefficient);
 
     crv.K_pT_thermal_osmosis =
         (solid_phase.hasProperty(
@@ -1749,13 +1754,18 @@ void ThermoHydroMechanicsLocalAssembler<
                                          ? storage_p_coeff + crv.storage_p_fr
                                          : storage_p_coeff;
 
+        double const strain_coupling_coef =
+            has_frozen_liquid_phase
+                ? crv.alpha_biot * (1 - ip_data.phi_fr) + crv.storage_p_fr
+                : crv.alpha_biot;
         // Artificial compressibility from the fixed stress splitting:
         auto const beta_FS = fixed_stress_stabilization_parameter *
-                             crv.alpha_biot * crv.alpha_biot *
+                             strain_coupling_coef *
                              crv.solid_skeleton_compressibility;
 
         storage_p.noalias() +=
-            N.transpose() * N * (storage_coeff + beta_FS) * w;
+            N.transpose() * N *
+            (storage_coeff + strain_coupling_coef * beta_FS) * w;
 
         laplace_T.noalias() +=
             dNdx.transpose() * crv.K_pT_thermal_osmosis * dNdx * w;
@@ -1778,28 +1788,21 @@ void ThermoHydroMechanicsLocalAssembler<
         storage_T.noalias() += N.transpose() * storage_T_coef * N * w;
 
         //
-        // pressure equation, displacement part.
-        double const strain_coupling_coef =
-            has_frozen_liquid_phase
-                ? crv.alpha_biot * (1 - ip_data.phi_fr) + crv.storage_p_fr
-                : crv.alpha_biot;
+        // pressure equation, displacement part using the fixed stress
+        // stabilization:
 
-        if (!fixed_stress_over_time_step)
-        {
-            // Constant portion of strain rate term:
-            double const strain_rate_b =
-                strain_coupling_coef *
-                (crv.eps_v_dot - beta_FS * _ip_data[ip].strain_rate_variable);
+        double const rhs_coef_strain_rate =
+            fixed_stress_over_time_step
+                ? strain_coupling_coef *
+                      (_ip_data[ip].strain_rate_variable +
+                       crv.solid_volumetric_thermal_expansion_coefficient *
+                           crv.dot_T)
+                : strain_coupling_coef *
+                      (crv.eps_v_dot -
+                       beta_FS * _ip_data[ip].strain_rate_variable);
 
-            local_rhs.noalias() -= strain_rate_b * N * w;  // to multiply rho_fr
-        }
-        else
-        {
-            // Constant portion of strain rate term:
-            local_rhs.noalias() -= strain_coupling_coef *
-                                   _ip_data[ip].strain_rate_variable * N *
-                                   w;  // to multiply rho_fr
-        }
+        local_rhs.noalias() -=
+            rhs_coef_strain_rate * N * w;  // to multiply rho_fr
     }
 
     local_Jac.noalias() += laplace_p + storage_p / dt;
@@ -1893,61 +1896,81 @@ void ThermoHydroMechanicsLocalAssembler<
         staggered_scheme_ptr &&
         staggered_scheme_ptr->fixed_stress_over_time_step &&
         process_id == _process_data.hydraulic_process_id;
+    auto const& medium = _process_data.media_map.getMedium(_element.getID());
+    bool const has_frozen_liquid_phase = medium->hasPhase("FrozenLiquid");
 
     auto const [T_prev, p_prev, u_prev] = localDOF(local_x_prev);
 
     for (unsigned ip = 0; ip < n_integration_points; ip++)
     {
         auto& ip_data = _ip_data[ip];
-        auto const& N_u = ip_data.N_u;
-        auto const& dNdx_u = ip_data.dNdx_u;
-
-        ParameterLib::SpatialPosition const x_position{
-            std::nullopt, _element.getID(),
-            MathLib::Point3d(
-                NumLib::interpolateCoordinates<ShapeFunctionDisplacement,
-                                               ShapeMatricesTypeDisplacement>(
-                    _element, N_u))};
-
-        auto const crv =
-            updateConstitutiveRelations(local_x, local_x_prev, x_position, t,
-                                        dt, _ip_data[ip], _ip_data_output[ip]);
-
-        auto const x_coord =
-            x_position.getCoordinates().value()[0];  // r for axisymmetry
-        auto const B =
-            LinearBMatrix::computeBMatrix<DisplacementDim,
-                                          ShapeFunctionDisplacement::NPOINTS,
-                                          typename BMatricesType::BMatrixType>(
-                dNdx_u, N_u, x_coord, _is_axially_symmetric);
-
-        MathLib::KelvinVector::KelvinVectorType<DisplacementDim> const
-            eps_prev = B * u_prev;
-
-        _ip_data[ip].eps0 =
-            _ip_data[ip].eps0_prev +
-            (1 - _ip_data[ip].phi_fr_prev / _ip_data[ip].porosity) *
-                (eps_prev - _ip_data[ip].eps0_prev);
-
+        // For the staggered scheme with fixed stress stabilization: update the
+        // value of the strain rate variable sub-expression for the next time
+        // step.
         if (use_fixed_stress_stabilization_over_time_step)
         {
-            auto const alpha_b = crv.alpha_biot;
-            auto const K_S =
-                ip_data.solid_material.getBulkModulus(t, x_position, &crv.C);
+            auto const& N_u = ip_data.N_u;
+            ParameterLib::SpatialPosition const x_position{
+                std::nullopt, _element.getID(),
+                MathLib::Point3d(
+                    NumLib::interpolateCoordinates<
+                        ShapeFunctionDisplacement,
+                        ShapeMatricesTypeDisplacement>(_element, N_u))};
+
+            auto const crv =
+                updateHydraulicProperties(local_x, local_x_prev, x_position, t,
+                                          dt, ip_data, _ip_data_output[ip]);
+
+            double const strain_coupling_coef =
+                has_frozen_liquid_phase
+                    ? crv.alpha_biot * (1 - ip_data.phi_fr) + crv.storage_p_fr
+                    : crv.alpha_biot;
+
             auto const fixed_stress_stabilization_parameter =
                 staggered_scheme_ptr->fixed_stress_stabilization_parameter;
-            auto const u =
-                local_x.template segment<displacement_size>(displacement_index);
-            auto const p =
-                local_x.template segment<pressure_size>(pressure_index);
+
+            // Artificial compressibility from the fixed stress splitting:
+            auto const beta_FS = fixed_stress_stabilization_parameter *
+                                 strain_coupling_coef *
+                                 crv.solid_skeleton_compressibility;
 
             ip_data.strain_rate_variable =
-                (Invariants::trace(B * u) - Invariants::trace(eps_prev)) / dt -
-                fixed_stress_stabilization_parameter * alpha_b *
-                    ip_data.N.dot(p - p_prev) / dt / K_S;
+                crv.eps_v_dot - beta_FS * crv.dot_p -
+                crv.solid_volumetric_thermal_expansion_coefficient * crv.dot_T;
         }
+        if (std::get_if<Monolithic>(&_process_data.coupling_scheme) ||
+            process_id == _process_data.mechanical_process_id)
+        {
+            auto const& N_u = ip_data.N_u;
+            auto const& dNdx_u = ip_data.dNdx_u;
 
-        _ip_data[ip].pushBackState();
+            ParameterLib::SpatialPosition const x_position{
+                std::nullopt, _element.getID(),
+                MathLib::Point3d(
+                    NumLib::interpolateCoordinates<
+                        ShapeFunctionDisplacement,
+                        ShapeMatricesTypeDisplacement>(_element, N_u))};
+
+            auto const crv = updateConstitutiveRelations(
+                local_x, local_x_prev, x_position, t, dt, _ip_data[ip],
+                _ip_data_output[ip]);
+
+            auto const x_coord =
+                x_position.getCoordinates().value()[0];  // r for axisymmetry
+            auto const B = LinearBMatrix::computeBMatrix<
+                DisplacementDim, ShapeFunctionDisplacement::NPOINTS,
+                typename BMatricesType::BMatrixType>(dNdx_u, N_u, x_coord,
+                                                     _is_axially_symmetric);
+
+            MathLib::KelvinVector::KelvinVectorType<DisplacementDim> const
+                eps_prev = B * u_prev;
+
+            _ip_data[ip].eps0 =
+                _ip_data[ip].eps0_prev +
+                (1 - _ip_data[ip].phi_fr_prev / _ip_data[ip].porosity) *
+                    (eps_prev - _ip_data[ip].eps0_prev);
+            _ip_data[ip].pushBackState();
+        }
     }
 }
 
